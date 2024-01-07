@@ -1,25 +1,33 @@
 from typing import List, Optional, Type
 
-from pydantic import BaseModel, Field, create_model
+from pydantic import BaseModel, Field, ValidationError, create_model
 
-from instructor.function_calls import OpenAISchema, Mode
+from instructor.function_calls import Mode, OpenAISchema
 
 
 class MultiTaskBase:
     task_type = None  # type: ignore
 
     @classmethod
-    def from_streaming_response(cls, completion, mode: Mode):
+    def from_streaming_response(
+        cls, completion, mode: Mode, throw_stream_exceptions=True
+    ):
         json_chunks = cls.extract_json(completion, mode)
-        yield from cls.tasks_from_chunks(json_chunks)
+        yield from cls.tasks_from_chunks(
+            json_chunks, throw_stream_exceptions=throw_stream_exceptions
+        )
 
     @classmethod
-    async def from_streaming_response_async(cls, completion, mode: Mode):
+    async def from_streaming_response_async(
+        cls, completion, mode: Mode, throw_stream_exceptions=True
+    ):
         json_chunks = cls.extract_json_async(completion, mode)
-        return cls.tasks_from_chunks_async(json_chunks)
+        return cls.tasks_from_chunks_async(
+            json_chunks, throw_stream_exceptions=throw_stream_exceptions
+        )
 
     @classmethod
-    def tasks_from_chunks(cls, json_chunks):
+    def tasks_from_chunks(cls, json_chunks, throw_stream_exceptions=True):
         started = False
         potential_object = ""
         for chunk in json_chunks:
@@ -32,11 +40,15 @@ class MultiTaskBase:
 
             task_json, potential_object = cls.get_object(potential_object, 0)
             if task_json:
-                obj = cls.task_type.model_validate_json(task_json)  # type: ignore
-                yield obj
+                try:
+                    obj = cls.task_type.model_validate_json(task_json)  # type: ignore
+                    yield obj
+                except ValidationError as e:
+                    if throw_stream_exceptions:
+                        raise e
 
     @classmethod
-    async def tasks_from_chunks_async(cls, json_chunks):
+    async def tasks_from_chunks_async(cls, json_chunks, throw_stream_exceptions=True):
         started = False
         potential_object = ""
         async for chunk in json_chunks:
@@ -49,8 +61,12 @@ class MultiTaskBase:
 
             task_json, potential_object = cls.get_object(potential_object, 0)
             if task_json:
-                obj = cls.task_type.model_validate_json(task_json)  # type: ignore
-                yield obj
+                try:
+                    obj = cls.task_type.model_validate_json(task_json)  # type: ignore
+                    yield obj
+                except ValidationError as e:
+                    if throw_stream_exceptions:
+                        raise e
 
     @staticmethod
     def extract_json(completion, mode: Mode):

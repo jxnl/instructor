@@ -1,9 +1,10 @@
-from docstring_parser import parse
+import enum
 from functools import wraps
 from pydantic import BaseModel, create_model
 from instructor.exceptions import IncompleteOutputException
 
-import enum
+from docstring_parser import parse
+from pydantic import BaseModel, create_model
 
 
 class Mode(enum.Enum):
@@ -108,6 +109,7 @@ class OpenAISchema(BaseModel):
         strict: bool = None,
         mode: Mode = Mode.FUNCTIONS,
         stream_multitask: bool = False,
+        throw_stream_exceptions=True,
     ):
         """Execute the function from the response of an openai chat completion
 
@@ -118,12 +120,15 @@ class OpenAISchema(BaseModel):
             strict (bool): Whether to use strict json parsing
             mode (Mode): The openai completion mode
             stream_multitask (bool): Whether to stream a multitask response
+            throw_stream_exceptions (bool): Whether to stop the stream if an exception is thrown
 
         Returns:
             cls (OpenAISchema): An instance of the class
         """
         if stream_multitask:
-            return cls.from_streaming_response(completion, mode)
+            return cls.from_streaming_response(
+                completion, mode, throw_stream_exceptions=throw_stream_exceptions
+            )
 
         if completion.choices[0].finish_reason == "length":
             raise IncompleteOutputException()
@@ -169,6 +174,7 @@ class OpenAISchema(BaseModel):
         strict: bool = None,
         mode: Mode = Mode.FUNCTIONS,
         stream_multitask: bool = False,
+        throw_stream_exceptions=True,
     ):
         """Execute the function from the response of an openai chat completion
 
@@ -178,13 +184,16 @@ class OpenAISchema(BaseModel):
             strict (bool): Whether to use strict json parsing
             mode (Mode): The openai completion mode
             stream_multitask (bool): Whether to stream a multitask response
+            throw_stream_exceptions (bool): Whether to stop the stream if an exception is thrown
 
         Returns:
             cls (OpenAISchema): An instance of the class
         """
 
         if stream_multitask:
-            return await cls.from_streaming_response_async(completion, mode)
+            return await cls.from_streaming_response_async(
+                completion, mode, throw_stream_exceptions=throw_stream_exceptions
+            )
 
         if completion.choices[0].finish_reason == "length":
             raise IncompleteOutputException()

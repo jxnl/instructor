@@ -148,6 +148,7 @@ def process_response(
     validation_context: dict = None,
     strict=None,
     mode: Mode = Mode.FUNCTIONS,
+    throw_stream_exceptions=True,
 ):  # type: ignore
     """Processes a OpenAI response with the response model, if available.
     It can use `validation_context` and `strict` to validate the response
@@ -159,6 +160,8 @@ def process_response(
         stream (bool): Whether the response is a stream
         validation_context (dict, optional): The validation context to use for validating the response. Defaults to None.
         strict (bool, optional): Whether to use strict json parsing. Defaults to None.
+        mode (Mode, optional): The openai completion mode. Defaults to Mode.FUNCTIONS.
+        throw_stream_exceptions (bool): Whether to stop the stream if an exception is thrown
     """
     if response_model is not None:
         is_model_multitask = issubclass(response_model, MultiTaskBase)
@@ -168,6 +171,7 @@ def process_response(
             strict=strict,
             mode=mode,
             stream_multitask=stream and is_model_multitask,
+            throw_stream_exceptions=throw_stream_exceptions,
         )
         if not stream:
             model._raw_response = response
@@ -185,6 +189,7 @@ async def process_response_async(
     validation_context: dict = None,
     strict=None,
     mode: Mode = Mode.FUNCTIONS,
+    throw_stream_exceptions=True,
 ):  # type: ignore
     """Processes a OpenAI response with the response model, if available.
     It can use `validation_context` and `strict` to validate the response
@@ -196,6 +201,8 @@ async def process_response_async(
         stream (bool): Whether the response is a stream
         validation_context (dict, optional): The validation context to use for validating the response. Defaults to None.
         strict (bool, optional): Whether to use strict json parsing. Defaults to None.
+        mode (Mode, optional): The openai completion mode. Defaults to Mode.FUNCTIONS.
+        throw_stream_exceptions (bool): Whether to stop the stream if an exception is thrown
     """
     if response_model is not None:
         is_model_multitask = issubclass(response_model, MultiTaskBase)
@@ -205,6 +212,7 @@ async def process_response_async(
             strict=strict,
             mode=mode,
             stream_multitask=stream and is_model_multitask,
+            throw_stream_exceptions=throw_stream_exceptions,
         )
         if not stream:
             model._raw_response = response
@@ -223,6 +231,7 @@ async def retry_async(
     max_retries,
     strict: Optional[bool] = None,
     mode: Mode = Mode.FUNCTIONS,
+    throw_stream_exceptions=True,
 ):
     retries = 0
     while retries <= max_retries:
@@ -236,6 +245,7 @@ async def retry_async(
                 validation_context=validation_context,
                 strict=strict,
                 mode=mode,
+                throw_stream_exceptions=throw_stream_exceptions,
             )
         except (ValidationError, JSONDecodeError) as e:
             logger.exception(f"Retrying, exception: {e}")
@@ -277,6 +287,7 @@ def retry_sync(
     max_retries,
     strict: Optional[bool] = None,
     mode: Mode = Mode.FUNCTIONS,
+    throw_stream_exceptions=True,
 ):
     retries = 0
     while retries <= max_retries:
@@ -291,6 +302,7 @@ def retry_sync(
                 validation_context=validation_context,
                 strict=strict,
                 mode=mode,
+                throw_stream_exceptions=throw_stream_exceptions,
             )
         except (ValidationError, JSONDecodeError) as e:
             logger.exception(f"Retrying, exception: {e}")
@@ -339,6 +351,7 @@ def wrap_chatcompletion(func: Callable, mode: Mode = Mode.FUNCTIONS) -> Callable
         response_model=None,
         validation_context=None,
         max_retries=1,
+        throw_stream_exceptions=True,
         *args,
         **kwargs,
     ):
@@ -353,6 +366,7 @@ def wrap_chatcompletion(func: Callable, mode: Mode = Mode.FUNCTIONS) -> Callable
             args=args,
             kwargs=new_kwargs,
             mode=mode,
+            throw_stream_exceptions=throw_stream_exceptions,
         )  # type: ignore
         return response
 
@@ -361,6 +375,7 @@ def wrap_chatcompletion(func: Callable, mode: Mode = Mode.FUNCTIONS) -> Callable
         response_model=None,
         validation_context=None,
         max_retries=1,
+        throw_stream_exceptions=True,
         *args,
         **kwargs,
     ):
@@ -375,6 +390,7 @@ def wrap_chatcompletion(func: Callable, mode: Mode = Mode.FUNCTIONS) -> Callable
             args=args,
             kwargs=new_kwargs,
             mode=mode,
+            throw_stream_exceptions=throw_stream_exceptions,
         )  # type: ignore
         return response
 
