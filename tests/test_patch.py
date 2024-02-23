@@ -3,7 +3,7 @@ import functools
 from openai import AsyncOpenAI, OpenAI
 
 import instructor
-from instructor.patch import OVERRIDE_DOCS, is_async
+from instructor.utils import OVERRIDE_DOCS, is_async
 
 
 def test_patch_completes_successfully():

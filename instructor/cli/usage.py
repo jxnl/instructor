@@ -53,27 +53,27 @@ MODEL_COSTS: Dict[
     ModelNames,
     Union[Dict[str, float], float],
 ] = {
-      "gpt-4-0125-preview": {"prompt": 0.01 / 1000, "completion": 0.03 / 1000}, 
-      "gpt-4-turbo-preview": {"prompt": 0.01 / 1000, "completion": 0.03 / 1000}, 
-      "gpt-4-1106-preview": {"prompt": 0.01 / 1000, "completion": 0.03 / 1000}, 
-      "gpt-4-vision-preview": {"prompt": 0.01 / 1000, "completion": 0.03 / 1000}, 
-      "gpt-4": {"prompt": 0.03 / 1000, "completion": 0.06 / 1000}, 
-      "gpt-4-0314": {"prompt": 0.03 / 1000, "completion": 0.06 / 1000},
-      "gpt-4-0613": {"prompt": 0.03 / 1000, "completion": 0.06 / 1000}, 
-      "gpt-4-32k": {"prompt": 0.06 / 1000, "completion": 0.12 / 1000}, 
-      "gpt-4-32k-0314": {"prompt": 0.06 / 1000, "completion": 0.12 / 1000}, 
-      "gpt-4-32k-0613": {"prompt": 0.06 / 1000, "completion": 0.12 / 1000}, 
-      "gpt-3.5-turbo": {"prompt": 0.0005 / 1000, "completion": 0.0015 / 1000}, 
-      "gpt-3.5-turbo-16k": {"prompt": 0.0030 / 1000, "completion": 0.0040 / 1000}, 
-      "gpt-3.5-turbo-0301": {"prompt": 0.0015 / 1000, "completion": 0.0020 / 1000}, 
-      "gpt-3.5-turbo-0613": {"prompt": 0.0015 / 1000, "completion": 0.0020 / 1000}, 
-      "gpt-3.5-turbo-1106": {"prompt": 0.0010 / 1000, "completion": 0.0020 / 1000}, 
-      "gpt-3.5-turbo-0125": {"prompt": 0.0005 / 1000, "completion": 0.0015 / 1000}, 
-      "gpt-3.5-turbo-16k-0613": {"prompt": 0.0030 / 1000, "completion": 0.0040 / 1000}, 
-      "gpt-3.5-turbo-instruct": {"prompt": 0.0015 / 1000, "completion": 0.0020 / 1000}, 
-      "text-embedding-3-small": 0.00002 / 1000,
-      "text-embedding-3-large": 0.00013 / 1000,
-      "text-embedding-ada-002": 0.00010 / 1000,
+    "gpt-4-0125-preview": {"prompt": 0.01 / 1000, "completion": 0.03 / 1000},
+    "gpt-4-turbo-preview": {"prompt": 0.01 / 1000, "completion": 0.03 / 1000},
+    "gpt-4-1106-preview": {"prompt": 0.01 / 1000, "completion": 0.03 / 1000},
+    "gpt-4-vision-preview": {"prompt": 0.01 / 1000, "completion": 0.03 / 1000},
+    "gpt-4": {"prompt": 0.03 / 1000, "completion": 0.06 / 1000},
+    "gpt-4-0314": {"prompt": 0.03 / 1000, "completion": 0.06 / 1000},
+    "gpt-4-0613": {"prompt": 0.03 / 1000, "completion": 0.06 / 1000},
+    "gpt-4-32k": {"prompt": 0.06 / 1000, "completion": 0.12 / 1000},
+    "gpt-4-32k-0314": {"prompt": 0.06 / 1000, "completion": 0.12 / 1000},
+    "gpt-4-32k-0613": {"prompt": 0.06 / 1000, "completion": 0.12 / 1000},
+    "gpt-3.5-turbo": {"prompt": 0.0005 / 1000, "completion": 0.0015 / 1000},
+    "gpt-3.5-turbo-16k": {"prompt": 0.0030 / 1000, "completion": 0.0040 / 1000},
+    "gpt-3.5-turbo-0301": {"prompt": 0.0015 / 1000, "completion": 0.0020 / 1000},
+    "gpt-3.5-turbo-0613": {"prompt": 0.0015 / 1000, "completion": 0.0020 / 1000},
+    "gpt-3.5-turbo-1106": {"prompt": 0.0010 / 1000, "completion": 0.0020 / 1000},
+    "gpt-3.5-turbo-0125": {"prompt": 0.0005 / 1000, "completion": 0.0015 / 1000},
+    "gpt-3.5-turbo-16k-0613": {"prompt": 0.0030 / 1000, "completion": 0.0040 / 1000},
+    "gpt-3.5-turbo-instruct": {"prompt": 0.0015 / 1000, "completion": 0.0020 / 1000},
+    "text-embedding-3-small": 0.00002 / 1000,
+    "text-embedding-3-large": 0.00013 / 1000,
+    "text-embedding-ada-002": 0.00010 / 1000,
 }
 
 
@@ -83,7 +83,7 @@ def get_model_cost(
     """Get the cost details for a given model."""
     if model in MODEL_COSTS:
         return MODEL_COSTS[model]
-    
+
     if model.startswith("gpt-3.5-turbo-16k"):
         return MODEL_COSTS["gpt-3.5-turbo-16k"]
     elif model.startswith("gpt-3.5-turbo"):
