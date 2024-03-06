@@ -104,6 +104,9 @@ class PartialBase(Generic[T_Model]):
         for chunk in completion:
             try:
                 if chunk.choices:
+                    if mode == Mode.ANTHROPIC:
+                        # ! so this is just not json... its xml??
+                        raise NotImplementedError
                     if mode == Mode.FUNCTIONS:
                         if json_chunk := chunk.choices[0].delta.function_call.arguments:
                             yield json_chunk
@@ -127,6 +130,9 @@ class PartialBase(Generic[T_Model]):
         async for chunk in completion:
             try:
                 if chunk.choices:
+                    if mode == Mode.ANTHROPIC:
+                        # ! so this is just not json... its xml??
+                        raise NotImplementedError
                     if mode == Mode.FUNCTIONS:
                         if json_chunk := chunk.choices[0].delta.function_call.arguments:
                             yield json_chunk

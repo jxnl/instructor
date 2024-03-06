@@ -98,6 +98,14 @@ def handle_response_model(
                 "stream=True is not supported when using response_model parameter for non-iterables"
             )
 
+        if mode == Mode.ANTHROPIC:
+            """TODO: We should assume that we've only patched the create call and not the client itself. 
+
+            new_kwargs["messages"] += "\n"
+            new_kwargs["messages"] += response_model.anthropic_schema
+            """
+            raise NotImplementedError
+
         if mode == Mode.FUNCTIONS:
             new_kwargs["functions"] = [response_model.openai_schema]  # type: ignore
             new_kwargs["function_call"] = {"name": response_model.openai_schema["name"]}  # type: ignore
@@ -456,26 +464,6 @@ def is_async(func: Callable) -> bool:
     return is_coroutine
 
 
-OVERRIDE_DOCS = """
-Creates a new chat completion for the provided messages and parameters.
-
-See: https://platform.openai.com/docs/api-reference/chat-completions/create
-
-Additional Notes:
-
-Using the `response_model` parameter, you can specify a response model to use for parsing the response from OpenAI's API. If its present, the response will be parsed using the response model, otherwise it will be returned as is.
-
-If `stream=True` is specified, the response will be parsed using the `from_stream_response` method of the response model, if available, otherwise it will be parsed using the `from_response` method.
-
-If need to obtain the raw response from OpenAI's API, you can access it using the `_raw_response` attribute of the response model. The `_raw_response.usage` attribute is modified to reflect the token usage from the last successful response as well as from any previous unsuccessful attempts.
-
-Parameters:
-    response_model (Union[Type[BaseModel], Type[OpenAISchema]]): The response model to use for parsing the response from OpenAI's API, if available (default: None)
-    max_retries (int): The maximum number of retries to attempt if the response is not valid (default: 0)
-    validation_context (dict): The validation context to use for validating the response (default: None)
-"""
-
-
 class InstructorChatCompletionCreate(Protocol):
     def __call__(
         self,
@@ -584,7 +572,6 @@ def patch(
         return response
 
     new_create = new_create_async if func_is_async else new_create_sync
-    new_create.__doc__ = OVERRIDE_DOCS
 
     if client is not None:
         client.chat.completions.create = new_create

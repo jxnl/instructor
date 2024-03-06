@@ -24,6 +24,7 @@ class Mode(enum.Enum):
     JSON = "json_mode"
     MD_JSON = "markdown_json_mode"
     JSON_SCHEMA = "json_schema_mode"
+    ANTHROPIC = "anthropic_mode"
 
     def __new__(cls, value: str) -> "Mode":
         member = object.__new__(cls)
@@ -41,7 +42,6 @@ class Mode(enum.Enum):
 
 
 class OpenAISchema(BaseModel):  # type: ignore[misc]
-    @classmethod  # type: ignore[misc]
     @property
     def openai_schema(cls) -> Dict[str, Any]:
         """
@@ -84,6 +84,11 @@ class OpenAISchema(BaseModel):  # type: ignore[misc]
             "parameters": parameters,
         }
 
+    @property
+    def anthropic_schema(self) -> str:
+        # TODO: This should generate the Anthropic XML format.
+        raise NotImplementedError
+
     @classmethod
     def from_response(
         cls,
@@ -109,6 +114,15 @@ class OpenAISchema(BaseModel):  # type: ignore[misc]
         if completion.choices[0].finish_reason == "length":
             logger.error("Incomplete output detected, should increase max_tokens")
             raise IncompleteOutputException()
+
+        if mode == Mode.ANTHROPIC:
+            """TODO: We should parse out the XML from the response. 
+
+            message = completion.messages 
+            model = xml_parse(message)
+            return cls.model_valudate(**model, context=validation_context, strict=strict)
+            """
+            raise NotImplementedError
 
         # If Anthropic, this should be different
         message = completion.choices[0].message
