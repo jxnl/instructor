@@ -36,13 +36,11 @@ def generate_file_table(files: List[openai.types.FileObject]) -> Table:
 
     return table
 
-
 def get_files(limit: int = 5) -> List[openai.types.FileObject]:
-    files = client.files.list(limit=limit)
+    files = client.files.list()
     files = files.data
     files = sorted(files, key=lambda x: x.created_at, reverse=True)
     return files[:limit]
-
 
 def get_file_status(file_id: str) -> str:
     response = client.files.retrieve(file_id)
