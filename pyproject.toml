@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "instructor"
-version = "0.6.4"
+version = "0.6.5"
 description = "structured outputs for llm"
 authors = ["Jason Liu <jason@jxnl.co>"]
 license = "MIT"
@@ -9,7 +9,7 @@ packages = [{include = "instructor"}]
 repository = "https://github.com/jxnl/instructor"
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.9"
 openai = "^1.1.0"
 pydantic = "^2.0.2"
 docstring-parser = "^0.15"
@@ -28,6 +28,7 @@ coverage = "^7.3.2"
 mypy = "^1.7.1"
 
 [tool.poetry.group.docs.dependencies]
+python = ">=3.9"
 mkdocs = "^1.4.3"
 mkdocs-material = {extras = ["imaging"], version = "^9.5.9"}
 mkdocstrings = "^0.22.0"
