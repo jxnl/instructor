@@ -7,6 +7,9 @@ from openai.types.chat import ChatCompletion
 from instructor.mode import Mode
 from instructor.utils import extract_json_from_codeblock
 import logging
+import importlib
+
+from .anthropic_utils import json_to_xml, extract_xml, xml_to_model
 
 T = TypeVar("T")
 
@@ -58,6 +61,11 @@ class OpenAISchema(BaseModel):  # type: ignore[misc]
         }
 
     @classmethod
+    @property
+    def anthropic_schema(cls) -> str:
+        return json_to_xml(cls)
+
+    @classmethod
     def from_response(
         cls,
         completion: ChatCompletion,
@@ -77,6 +85,17 @@ class OpenAISchema(BaseModel):  # type: ignore[misc]
         Returns:
             cls (OpenAISchema): An instance of the class
         """
+        if mode == Mode.ANTHROPIC_TOOLS:
+            try:
+                assert isinstance(
+                    completion,
+                    getattr(importlib.import_module("anthropic.types.message"), "Message"),
+                )
+            except ImportError:
+                raise ImportError("Please 'pip install anthropic' package to proceed.")
+            assert hasattr(completion, "content")
+            return xml_to_model(cls, extract_xml(completion.content[0].text)) # type:ignore
+
         assert hasattr(completion, "choices")
 
         if completion.choices[0].finish_reason == "length":

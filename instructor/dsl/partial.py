@@ -21,10 +21,13 @@ from typing import (
     TypeVar,
 )
 from copy import deepcopy
+import re
 
 from instructor.mode import Mode
 from instructor.dsl.partialjson import JSONParser
 from instructor.utils import extract_json_from_stream, extract_json_from_stream_async
+
+from ..anthropic_utils import xml_to_model
 
 parser = JSONParser()
 T_Model = TypeVar("T_Model", bound=BaseModel)
@@ -35,12 +38,16 @@ class PartialBase(Generic[T_Model]):
     def from_streaming_response(
         cls, completion: Iterable[Any], mode: Mode, **kwargs: Any
     ) -> Generator[T_Model, None, None]:
-        json_chunks = cls.extract_json(completion, mode)
+        if mode == Mode.ANTHROPIC_TOOLS:
+            xml_chunks = cls.extract_xml(completion)
+            yield from cls.model_from_xml_chunks(xml_chunks, **kwargs)
+        else:
+            json_chunks = cls.extract_json(completion, mode)
 
-        if mode == Mode.MD_JSON:
-            json_chunks = extract_json_from_stream(json_chunks)
+            if mode == Mode.MD_JSON:
+                json_chunks = extract_json_from_stream(json_chunks)
 
-        yield from cls.model_from_chunks(json_chunks, **kwargs)
+            yield from cls.model_from_chunks(json_chunks, **kwargs)
 
     @classmethod
     async def from_streaming_response_async(
@@ -52,6 +59,62 @@ class PartialBase(Generic[T_Model]):
             json_chunks = extract_json_from_stream_async(json_chunks)
 
         return cls.model_from_chunks_async(json_chunks, **kwargs)
+    
+    @classmethod
+    def model_from_xml_chunks(cls, xml_chunks: Iterable[Any], **kwargs: Any) -> Generator[str, None, None]:
+        # note: only considers one function call
+        # TODO: support self-closing tags
+        # TODO: support nested structures
+        accumulator = ""
+        parameters_content = ""
+        current_opening_tag = ""
+        current_opening_tag_content = ""
+        
+        parameters_start_tag_regex = r"(<parameters>)"
+        parameters_end_tag_regex = r"(</parameters>)"
+        opening_tag_regex = r'<([a-zA-Z0-9]+)>'
+        closing_tag_regex = r'</([a-zA-Z0-9]+)>'
+
+        inside_parameters = False
+        accumulating = False
+
+        for chunk in xml_chunks:
+            accumulator += chunk
+
+            if not inside_parameters:
+                start_match = re.search(parameters_start_tag_regex, accumulator, re.DOTALL)
+                if start_match:
+                    inside_parameters = True
+                    parameters_content = ""
+                    accumulator = accumulator[start_match.end():]
+
+            while inside_parameters:
+                opening_tag = re.search(opening_tag_regex, accumulator, re.DOTALL)
+                closing_tag = re.search(closing_tag_regex, accumulator, re.DOTALL)
+                end_match = re.search(parameters_end_tag_regex, accumulator, re.DOTALL)
+                
+                if end_match:
+                    break
+
+                if opening_tag and not accumulating:
+                    current_opening_tag = opening_tag.group(1)
+                    accumulating = True
+                    accumulator = accumulator[opening_tag.end():]
+                
+                if closing_tag:
+                    current_opening_tag_content += accumulator
+                    accumulator = accumulator[closing_tag.end():]
+                    if closing_tag.group(1) == current_opening_tag:
+                        parameters_content += f"<{closing_tag.group(1)}>{current_opening_tag_content}"
+                        current_opening_tag_content = ""
+                        accumulating = False
+                        try:
+                            yield xml_to_model(cls, "<function_calls><invoke><tool_name></tool_name><parameters>" + parameters_content + "</parameters></invoke></function_calls>")
+                        except:
+                            continue
+
+                else: # No more complete tags in the current chunk
+                    break
 
     @classmethod
     def model_from_chunks(
@@ -96,6 +159,14 @@ class PartialBase(Generic[T_Model]):
                     ] = chunk  # Provide the raw chunk for debugging and benchmarking
                     prev_obj = obj
                     yield obj
+
+    @staticmethod
+    def extract_xml(
+        completion: Iterable[Any] # not sure that this is an iterable
+    ) -> Generator[str, None, None]:
+        with completion as stream:
+            for text in stream.text_stream:
+                yield text
 
     @staticmethod
     def extract_json(

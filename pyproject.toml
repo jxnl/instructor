@@ -18,6 +18,10 @@ rich = "^13.7.0"
 aiohttp = "^3.9.1"
 tenacity = "^8.2.3"
 
+[tool.poetry.group.anthropic.dependencies]
+anthropic = "^0.18.1"
+xmltodict = "^0.13.0"
+
 [tool.poetry.scripts]
 instructor = "instructor.cli.cli:app"
 

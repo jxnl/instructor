@@ -18,7 +18,9 @@ from instructor.retry import retry_async, retry_sync
 from instructor.utils import is_async
 
 from instructor.mode import Mode
+from instructor.anthropic_utils import AnthropicContextManager
 import logging
+import inspect
 
 logger = logging.getLogger("instructor")
 
@@ -140,6 +142,11 @@ def patch(
         client.chat.completions.create = new_create
         return client
     else:
+        # Wrapped context to mimic Anthropic streaming using "with"
+        if mode == Mode.ANTHROPIC_TOOLS and inspect.isfunction(new_create) and new_create.__name__ == 'stream': # is this enough of a check?
+            def context_manager_wrapper(*args, **kwargs):
+                return AnthropicContextManager(new_create, *args, **kwargs)
+            return context_manager_wrapper
         return new_create
 
 
