@@ -8,6 +8,7 @@
 
 from pydantic import BaseModel, create_model
 from pydantic.fields import FieldInfo
+from typing import TypeVar, NoReturn, get_args, get_origin, Optional, Generic, Literal
 from typing import (
     Any,
     AsyncGenerator,
@@ -21,6 +22,7 @@ from typing import (
     TypeVar,
 )
 from copy import deepcopy
+from enum import Enum
 
 from instructor.mode import Mode
 from instructor.dsl.partialjson import JSONParser
@@ -191,6 +193,16 @@ class Partial(Generic[T_Model]):
             tmp_field = deepcopy(field)
 
             annotation = field.annotation
+
+            # Check if the field is a Literal and convert it to an Optional[str]
+            if get_origin(annotation) == Literal:
+                tmp_field.annotation = Optional[str]
+                tmp_field.default = None
+
+            # Check if the field is an Enum and convert it to an Optional[str]
+            elif issubclass(annotation, Enum):
+                tmp_field.annotation = Optional[str]
+                tmp_field.default = None
 
             # Handle generics (like List, Dict, etc.)
             if get_origin(annotation) is not None:
