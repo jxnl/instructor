@@ -64,7 +64,12 @@ def retry_sync(
     strict: Optional[bool] = None,
     mode: Mode = Mode.TOOLS,
 ) -> T_Model:
-    total_usage = CompletionUsage(completion_tokens=0, prompt_tokens=0, total_tokens=0)
+    total_usage = CompletionUsage(
+        messages=kwargs.get("messages", []),
+        completion_tokens=0,
+        prompt_tokens=0,
+        total_tokens=0,
+    )
 
     # If max_retries is int, then create a Retrying object
     if isinstance(max_retries, int):
@@ -82,7 +87,9 @@ def retry_sync(
                 try:
                     response = func(*args, **kwargs)
                     stream = kwargs.get("stream", False)
-                    response = update_total_usage(response, total_usage)
+                    response = update_total_usage(
+                        response, total_usage, kwargs["messages"]
+                    )
                     return process_response(
                         response,
                         response_model=response_model,
@@ -110,7 +117,12 @@ async def retry_async(
     strict: Optional[bool] = None,
     mode: Mode = Mode.TOOLS,
 ) -> T:
-    total_usage = CompletionUsage(completion_tokens=0, prompt_tokens=0, total_tokens=0)
+    total_usage = CompletionUsage(
+        messages=kwargs.get("messages", []),
+        completion_tokens=0,
+        prompt_tokens=0,
+        total_tokens=0,
+    )
 
     # If max_retries is int, then create a AsyncRetrying object
     if isinstance(max_retries, int):
@@ -131,7 +143,9 @@ async def retry_async(
                 try:
                     response: ChatCompletion = await func(*args, **kwargs)  # type: ignore
                     stream = kwargs.get("stream", False)
-                    response = update_total_usage(response, total_usage)
+                    response = update_total_usage(
+                        response, total_usage, kwargs["messages"]
+                    )
                     return await process_response_async(
                         response,
                         response_model=response_model,
