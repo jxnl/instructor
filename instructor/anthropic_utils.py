@@ -1,13 +1,13 @@
 # type: ignore
 import re
-from pydantic import BaseModel
-from typing import Type, Any, Dict, TypeVar
+from typing import Any, Dict, Type, TypeVar
 
+from pydantic import BaseModel
 
 try:
-    import xmltodict
     import xml.etree.ElementTree as ET
-except ImportError:
+
+    import xmltodict
     import warnings
 
     warnings.warn(
@@ -28,9 +28,7 @@ def json_to_xml(model: Type[BaseModel]) -> str:
     tool_name = ET.SubElement(root, "tool_name")
     tool_name.text = model_dict.get("title", "Unknown")
     description = ET.SubElement(root, "description")
-    description.text = (
-        "This is the function that must be used to construct the response."
-    )
+    description.text = "This is the function that must be used to construct the response."
     parameters = ET.SubElement(root, "parameters")
     references = model_dict.get("$defs", {})
     list_type_found = _add_params(parameters, model_dict, references)
@@ -64,18 +62,13 @@ def _add_params(
             # case 1: List type (example json: {'anyOf': [{'items': {'$ref': '#/$defs/PartialUser'}, 'type': 'array'}, {'type': 'null'}], 'default': None, 'title': 'Users'})
             # case 2: nested model (example json: {'anyOf': [{'$ref': '#/$defs/PartialDate'}, {'type': 'null'}], 'default': {}})
             field_type = " or ".join(
-                [
-                    d["type"]
-                    if "type" in d
-                    else (d["$ref"] if "$ref" in d else "unknown")
-                    for d in details["anyOf"]
-                ]
+                [d["type"] if "type" in d else (d["$ref"] if "$ref" in d else "unknown") for d in details["anyOf"]]
             )
         else:
             field_type = details.get(
                 "type", "unknown"
             )  # Might be better to fail here if there is no type since pydantic models require types
-        
+
         if "array" in field_type and "items" not in details:
             raise ValueError("Invalid array item.")
 
@@ -83,7 +76,7 @@ def _add_params(
         if "array" in field_type and "$ref" in details["items"]:
             type_element.text = f"List[{details['title']}]"
             list_found = True
-            nested_list_found = True     
+            nested_list_found = True
         # Check for non-nested List
         elif "array" in field_type and "type" in details["items"]:
             type_element.text = f"List[{details['items']['type']}]"
@@ -94,9 +87,7 @@ def _add_params(
         param_description = ET.SubElement(parameter, "description")
         param_description.text = details.get("description", "")
 
-        if (
-            isinstance(details, dict) and "$ref" in details
-        ):  # Checking if there are nested params
+        if isinstance(details, dict) and "$ref" in details:  # Checking if there are nested params
             reference = _resolve_reference(references, details["$ref"])
 
             if "enum" in reference:
@@ -143,6 +134,94 @@ def xml_to_model(model: Type[T], xml_string: str) -> T:
     """Converts XML in Anthropic's schema to an instance of the provided class."""
     parsed_xml = xmltodict.parse(xml_string)
     model_dict = parsed_xml["function_calls"]["invoke"]["parameters"]
-    return model(
-        **model_dict
-    )  # This sometimes fails if Anthropic's response hallucinates from the schema
+    return model(**model_dict)  # This sometimes fails if Anthropic's response hallucinates from the schema
+
+
+def build_xml_from_schema(
+    schema: Dict[str, Any], parent: ET | None = None, root_name: str = "tool_description", defs: Dict[str, Any] | None = None
+) -> str:
+    if parent is None:
+        root = ET.Element(root_name)
+        tool_name = ET.SubElement(root, "tool_name")
+        tool_name.text = schema.get("title", "")
+        if "description" in schema:
+            description = ET.SubElement(root, "description")
+            description.text = schema["description"]
+    else:
+        root = parent
+
+    if defs is None:
+        defs = schema.get("$defs", {})
+
+    if "properties" in schema:
+        properties = ET.SubElement(root, "properties")
+        for key, value in schema["properties"].items():
+            property_elem = ET.SubElement(properties, "property")
+            name = ET.SubElement(property_elem, "name")
+            name.text = key
+            type_elem = ET.SubElement(property_elem, "type")
+            type_elem.text = value.get("type", "object")
+
+            # Recursively handle nested objects
+            if "$ref" in value:
+                ref = _resolve_reference(defs, value["$ref"])
+                if "enum" in ref:
+                    type_elem.text = ref["type"]
+                    values = ET.SubElement(property_elem, "values")
+                    for enum_value in ref["enum"]:
+                        value_elem = ET.SubElement(values, "value")
+                        value_elem.text = enum_value
+            elif "enum" in value:
+                type_elem.text = value["type"]
+                values = ET.SubElement(property_elem, "values")
+                for enum_value in value["enum"]:
+                    value_elem = ET.SubElement(values, "value")
+                    value_elem.text = enum_value
+            elif value.get("type") == "object":
+                build_xml_from_schema(value, property_elem, defs=defs)
+            elif value.get("type") == "array":
+                type_elem.text = "List"
+                if "items" in value:
+                    items = value["items"]
+                    if items.get("type") == "object":
+                        # Handle object items in the list
+                        item_properties = ET.SubElement(property_elem, "items")
+                        build_xml_from_schema(items, item_properties, defs=defs)
+                    elif items.get("type") == "array":
+                        # Handle nested arrays
+                        type_elem.text += f"[{items.get('title', '')}]"
+                        if "items" in items:
+                            item_properties = ET.SubElement(property_elem, "items")
+                            build_xml_from_schema(items["items"], item_properties, defs=defs)
+                    elif "$ref" in items:
+                        # Handle references to nested models in the list
+                        ref_path = items["$ref"].split("/")
+                        ref_name = ref_path[-1]
+                        if ref_name in defs:
+                            item_properties = ET.SubElement(property_elem, "items")
+                            build_xml_from_schema(defs[ref_name], item_properties, defs=defs)
+                    else:
+                        # Handle simple types in the list
+                        type_elem.text += f"[{items.get('type', '')}]"
+            # Handle references to nested models
+            elif "$ref" in value:
+                ref_path = value["$ref"].split("/")
+                ref_name = ref_path[-1]
+                if ref_name in defs:
+                    build_xml_from_schema(defs[ref_name], property_elem, defs=defs)
+            # Handle allOf and anyOf within properties
+            elif "allOf" in value or "anyOf" in value:
+                for construct in ["allOf", "anyOf"]:
+                    if construct in value:
+                        for sub_schema in value[construct]:
+                            if "$ref" in sub_schema:
+                                ref_path = sub_schema["$ref"].split("/")
+                                ref_name = ref_path[-1]
+                                if ref_name in defs:
+                                    build_xml_from_schema(defs[ref_name], property_elem, defs=defs)
+                            else:
+                                build_xml_from_schema(sub_schema, property_elem, defs=defs)
+            else:
+                raise ValueError(f"Unsupported schema")
+
+    return ET.tostring(root, encoding="utf-8").decode("utf-8")
