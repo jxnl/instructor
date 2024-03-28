@@ -1,14 +1,14 @@
-from typing import Any, Dict, Optional, Type, TypeVar
-from xml.dom.minidom import parseString
-from docstring_parser import parse
+import logging
 from functools import wraps
-from pydantic import BaseModel, create_model
+from typing import Any, Dict, Optional, Type, TypeVar
+
+from docstring_parser import parse
 from openai.types.chat import ChatCompletion
+from pydantic import BaseModel, create_model
+
 from instructor.exceptions import IncompleteOutputException
 from instructor.mode import Mode
 from instructor.utils import extract_json_from_codeblock
-import logging
-
 
 T = TypeVar("T")
 
@@ -63,11 +63,7 @@ class OpenAISchema(BaseModel):  # type: ignore[misc]
     @property
     def anthropic_schema(cls) -> str:
         from instructor.anthropic_utils import json_to_xml
-
-        return "\n".join(
-            line.lstrip()
-            for line in parseString(json_to_xml(cls)).toprettyxml().splitlines()[1:]
-        )
+        return json_to_xml(cls)
 
 
     @classmethod

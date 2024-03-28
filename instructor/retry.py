@@ -83,7 +83,7 @@ def retry_sync(
                     response = func(*args, **kwargs)
                     stream = kwargs.get("stream", False)
                     response = update_total_usage(response, total_usage)
-                    return process_response(
+                    result = process_response(
                         response,
                         response_model=response_model,
                         stream=stream,
@@ -91,6 +91,7 @@ def retry_sync(
                         strict=strict,
                         mode=mode,
                     )
+                    return result
                 except (ValidationError, JSONDecodeError) as e:
                     logger.debug(f"Error response: {response}")
                     kwargs["messages"].extend(reask_messages(response, mode, e))

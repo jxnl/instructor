@@ -33,17 +33,22 @@ jobs:
         uses: snok/install-poetry@v1.3.1
 
       - name: Install dependencies
-        run: poetry install --with dev anthropic
+        run: poetry install --with dev,anthropic
+
+      - name: Run Anthropic Tests
+        run: poetry run pytest tests/anthropic/test_anthropic.py
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Run tests
-        run: poetry run pytest tests/ -k "not openai"
+        run: poetry run pytest tests/ -k "not openai" --ignore=tests/anthropic
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Generate coverage report
         if: matrix.python-version == '3.11'
         run: |
-          poetry run coverage run -m pytest tests/ -k "not openai"
+          poetry run coverage run -m pytest tests/ -k "not openai" --ignore=tests/anthropic
           poetry run coverage report
           poetry run coverage html
         env:

@@ -1,3 +1,4 @@
+import os
 from enum import Enum
 from typing import List
 
@@ -8,25 +9,26 @@ from pydantic import BaseModel
 import instructor
 
 create = instructor.patch(
-    create=anthropic.Anthropic().messages.create, mode=instructor.Mode.ANTHROPIC_TOOLS
+    create=anthropic.Anthropic().messages.create,
+    mode=instructor.Mode.ANTHROPIC_TOOLS,
 )
 
 
-@pytest.mark.skip
 def test_anthropic():
-    class Properties(BaseModel):
+    class Property(BaseModel):
         name: str
-        value: List[str]
+        value: str
 
     class User(BaseModel):
         name: str
         age: int
-        properties: List[Properties]
+        properties: List[Property]
 
     resp = create(
         model="claude-3-haiku-20240307",
         max_tokens=1024,
         max_retries=0,
+        temperature=0,
         messages=[
             {
                 "role": "user",
@@ -39,7 +41,6 @@ def test_anthropic():
     assert isinstance(resp, User)
 
 
-@pytest.mark.skip
 def test_anthropic_enum():
     class ProgrammingLanguage(Enum):
         PYTHON = "python"
@@ -51,10 +52,12 @@ def test_anthropic_enum():
     class SimpleEnum(BaseModel):
         language: ProgrammingLanguage
 
+    create = instructor.patch(create=anthropic.Anthropic().messages.create, mode=instructor.Mode.ANTHROPIC_TOOLS)
     resp = create(
         model="claude-3-haiku-20240307",
         max_tokens=1024,
         max_retries=0,
+        temperature=0,
         messages=[
             {
                 "role": "user",
@@ -65,3 +68,8 @@ def test_anthropic_enum():
     )  # type: ignore
 
     assert isinstance(resp, SimpleEnum)
+
+
+if __name__ == "__main__":
+    current_file = os.path.abspath(__file__)
+    pytest.main([current_file])
