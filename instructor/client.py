@@ -16,9 +16,11 @@ from collections.abc import Generator, Iterable, Awaitable, AsyncGenerator
 from typing_extensions import Self
 from pydantic import BaseModel
 from instructor.dsl.partial import Partial
+from instructor.usage import UnifiedUsage
 
 
 T = TypeVar("T", bound=Union[BaseModel, "Iterable[Any]", "Partial[Any]"])
+T_ResponseWithUsage = TypeVar("T_ResponseWithUsage", bound=tuple[Any, UnifiedUsage])
 
 
 class Instructor:
@@ -194,8 +196,9 @@ class Instructor:
         max_retries: int = 3,
         validation_context: dict[str, Any] | None = None,
         strict: bool = True,
+        with_usage: bool = False,
         **kwargs: Any,
-    ) -> Awaitable[tuple[T, Any]]: ...
+    ) -> Awaitable[Union[tuple[T, Any], tuple[T, Any, UnifiedUsage]]]: ...
 
     @overload
     def create_with_completion(
@@ -205,8 +208,9 @@ class Instructor:
         max_retries: int = 3,
         validation_context: dict[str, Any] | None = None,
         strict: bool = True,
+        with_usage: bool = False,
         **kwargs: Any,
-    ) -> tuple[T, Any]: ...
+    ) -> Union[tuple[T, Any], tuple[T, Any, UnifiedUsage]]: ...
 
     def create_with_completion(
         self,
@@ -215,18 +219,28 @@ class Instructor:
         max_retries: int = 3,
         validation_context: dict[str, Any] | None = None,
         strict: bool = True,
+        with_usage: bool = False,
         **kwargs: Any,
-    ) -> tuple[T, Any] | Awaitable[tuple[T, Any]]:
+    ) -> (
+        Union[tuple[T, Any], tuple[T, Any, UnifiedUsage]]
+        | Awaitable[Union[tuple[T, Any], tuple[T, Any, UnifiedUsage]]]
+    ):
         kwargs = self.handle_kwargs(kwargs)
-        model = self.create_fn(
+        result = self.create_fn(
             messages=messages,
             response_model=response_model,
             max_retries=max_retries,
             validation_context=validation_context,
             strict=strict,
+            with_usage=with_usage,
             **kwargs,
         )
-        return model, model._raw_response
+        if with_usage:
+            model, usage = result
+            return (model, model._raw_response, usage)
+        else:
+            model = result
+            return (model, model._raw_response)
 
     def handle_kwargs(self, kwargs: dict[str, Any]) -> dict[str, Any]:
         for key, value in self.kwargs.items():
@@ -326,18 +340,24 @@ class AsyncInstructor(Instructor):
         max_retries: int = 3,
         validation_context: dict[str, Any] | None = None,
         strict: bool = True,
+        with_usage: bool = False,
         **kwargs: Any,
-    ) -> tuple[T, Any]:
+    ) -> Union[tuple[T, Any], tuple[T, Any, UnifiedUsage]]:
         kwargs = self.handle_kwargs(kwargs)
-        response = await self.create_fn(
+        result = await self.create_fn(
             response_model=response_model,
             validation_context=validation_context,
             max_retries=max_retries,
             messages=messages,
             strict=strict,
+            with_usage=with_usage,
             **kwargs,
         )
-        return response, response._raw_response
+        if with_usage:
+            response, usage = result
+            return (response, response._raw_response, usage)
+        else:
+            return (result, result._raw_response)
 
 
 @overload
