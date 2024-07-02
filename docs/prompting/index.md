@@ -1,8 +1,8 @@
 # Prompting
 
-Prompting is a challenging task, with many small nuances that we need to take note of. We've created examples of 58 different prompting techniques<sup><a href="https://arxiv.org/abs/2406.06608">\*</a></sup> that you can take advantage of today in order to get a quick boost to your model's performance.
+Prompting is a challenging task, with many small nuances that we need to take note of. We've compiled a list of 58 different prompting techniques that you can take advantage of today in order to get a quick boost to your model's performance.
 
-The prompting techniques are separated into the following categories - [**Zero Shot**](#zero-shot), [**Few Shot**](#few-shot), [**Thought Generation**](#thought-generation), [**Ensembling**](#ensembling), [**Self-Criticism**](#self-criticism) and [**Decomposition**](#decomposition).
+We've separated them into the following categories - [**Zero Shot**](#zero-shot), [**Few Shot**](#few-shot), [**Thought Generation**](#thought-generation), [**Ensembling**](#ensembling), [**Self-Criticism**](#self-criticism) and [**Decomposition**](#decomposition)
 
 Each of these techniques offers unique advantages in different scenarios. Click on the links to learn more about each method and how to apply them effectively in your prompts.
 
@@ -83,4 +83,4 @@ How can we break down complex problems into more manageable parts? Decomposition
 7. [Skeleton-of-Thought](decomposition/skeleton_of_thought.md)
 8. [Tree-of-Thought](decomposition/tree-of-thought.md)
 
-<sup id="ref-asterisk">\*</sup>: [The Prompt Report: A Systematic Survey of Prompting Techniques](https://arxiv.org/abs/2406.06608)
+# <sup id="ref-asterisk">\*</sup>: [The Prompt Report: A Systematic Survey of Prompting Techniques](https://arxiv.org/abs/2406.06608)

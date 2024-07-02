@@ -8,6 +8,8 @@ Use emotional language in prompts to enhance the performance of language models.
 - Are you sure?
 - Are you sure that's your final answer? It might be worth taking another look.
 
+We can implement this using `instructor` as seen below.
+
 ```python hl_lines="25"
 import openai
 import instructor

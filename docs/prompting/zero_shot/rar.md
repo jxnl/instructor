@@ -14,9 +14,9 @@ This could look something like this
 
     **Assistant**: The last letters in the words "Edgar" and "Bob" are "r" and "b", hence when concatenated, it forms "rb".
 
-We can implement this in instructor as seen below.
+We can implement this using `instructor` as seen below.
 
-```python hl_lines="24-25"
+```python hl_lines="24-26"
 from pydantic import BaseModel, Field
 import instructor
 from openai import OpenAI
@@ -26,12 +26,13 @@ client = instructor.from_openai(OpenAI())
 
 class ImprovedQuestion(BaseModel):
     rewritten_question: str = Field(
-        ..., description="An improved, more specific version of the original question"
+        ..., description="""An improved, more specific
+        version of the original question"""
     )
 
 
 class FinalResponse(BaseModel):
-    response: str = Field(..., description="This is a response to an object")
+    response: str = Field(..., description="Answer to user's question")
 
 
 def rewrite_question(question: str):
@@ -64,7 +65,8 @@ if __name__ == "__main__":
     )
     print(f"Rewritten query: {rewritten_query.rewritten_question}")
     """
-    Rewritten query: What is the result when you take the last letters of each word in the name 'Elon Musk' and concatenate them?
+    Rewritten query: What is the result when you take the last letters of each
+    word in the name 'Elon Musk' and concatenate them?
     """
 
     response = answer_question(rewritten_query.rewritten_question)

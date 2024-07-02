@@ -15,7 +15,7 @@ This helps our model focus on the most pertinent details and ultimately produce 
 
     **Step 2**: You are {entity}. Answer the following question based only on these facts you know {facts}. Question: {question}
 
-This approach can help eliminate the influence of irrelevant information in the prompt.<sup><a href="https://arxiv.org/abs/2406.06608">\*</a></sup>
+This approach can help eliminate the influence of irrelevant information in the prompt.<sup><a href="https://arxiv.org/abs/2406.06608">\*</a></sup>. We can implement this using `instructor` as seen below.
 
 ```python hl_lines="24-25"
 import openai

@@ -7,7 +7,7 @@ Refine your prompt using the System 2 Attention (S2A) technique<sup><a href="htt
 1. Ask the LLM to rewrite the prompt by removing any information unrelated to the question.
 2. Pass this new, focused prompt back to the LLM to generate the final response.
 
-This method helps in producing more factual and less opinionated outputs<sup><a href="https://arxiv.org/abs/2311.11829">1</a></sup>.<sup><a href="https://arxiv.org/abs/2406.06608">\*</a></sup>
+This method helps in producing more factual and less opinionated outputs<sup><a href="https://arxiv.org/abs/2311.11829">1</a></sup>.<sup><a href="https://arxiv.org/abs/2406.06608">\*</a></sup>. We can implement this using `instructor` as seen below.
 
 ```python hl_lines="25-28"
 import openai

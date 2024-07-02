@@ -214,8 +214,8 @@ nav:
       - Refine Your Query: 'prompting/zero_shot/s2a.md'
       - Limit Knowledge Strategically: 'prompting/zero_shot/simtom.md'
       - Rephrase the Prompt: 'prompting/zero_shot/rar.md' 
-      - Read the prompt again: 'prompting/zero_shot/re2.md'
-      - Self-Ask: 'prompting/zero_shot/self_ask.md'
+      - Read the Prompt Again: 'prompting/zero_shot/re2.md'
+      - Clarify with Questions: 'prompting/zero_shot/self_ask.md'
     - Few-Shot:
       - Example Generation:
         - SG-ICL: 'prompting/few_shot/example_generation/sg_icl.md'
@@ -227,8 +227,8 @@ nav:
       - Chain-Of-Thought (Zero-Shot):
         - Analogical Prompting: 'prompting/thought_generation/chain_of_thought_zero_shot/analogical_prompting.md'
         - Step-Back Prompting: 'prompting/thought_generation/chain_of_thought_zero_shot/step_back_prompting.md'
-        - Thread-of-Thought (ThoT): 'prompting/thought_generation/chain_of_thought_zero_shot/thread_of_thought.md'
-        - Tab-CoT: 'prompting/thought_generation/chain_of_thought_zero_shot/tab_cot.md'
+        - Examine The Context: 'prompting/thought_generation/chain_of_thought_zero_shot/thread_of_thought.md'
+        - Structure The Reasoning: 'prompting/thought_generation/chain_of_thought_zero_shot/tab_cot.md'
       - Chain-Of-Thought (Few-Shot):
         - Active-Prompt: 'prompting/thought_generation/chain_of_thought_few_shot/active_prompt.md'
         - Auto-CoT: 'prompting/thought_generation/chain_of_thought_few_shot/auto_cot.md'

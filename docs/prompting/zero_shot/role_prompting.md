@@ -8,6 +8,8 @@ By assigning a specific role to the model, we can improve the performance of the
 
     You are a **[ role ]**. You **[ description of task ]**. **[ Reiterate instructions ]**.
 
+We can implement this using `instructor` as seen below.
+
 ```python hl_lines="23-26"
 import openai
 import instructor

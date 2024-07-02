@@ -4,7 +4,7 @@ description: "Use a specific style and be specific about the tone, pacing and ot
 
 Be specific about the desired writing style<sup><a href="https://arxiv.org/abs/2302.09185">1</a></sup> that you want from the model using specific instructions to the model about tone, pacing among other factors.
 
-By giving clear directions about these stylistic elements, you can guide the model to produce text that closely matches your intended style and format.
+By giving clear directions about these stylistic elements, you can guide the model to produce text that closely matches your intended style and format. We can implement this using `instructor` as seen below.
 
 ```python hl_lines="19-23"
 import instructor

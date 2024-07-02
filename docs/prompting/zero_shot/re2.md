@@ -15,7 +15,7 @@ This could look something like this
 
     **[ Critical Thinking Prompt  ]**
 
-We can implement this in Instructor pretty simply.
+We can implement this using `instructor` as seen below.
 
 ```python hl_lines="20-21"
 import instructor
@@ -27,7 +27,7 @@ client = instructor.from_openai(OpenAI())
 
 
 class Solution(BaseModel):
-    final_answer: int = Field(..., description="This is the final answer")
+    final_answer: int = Field(..., description="Final Answer")
 
 
 def solve_question(question: str) -> int:
