@@ -28,6 +28,7 @@ def test_extract(model, data, mode):
     # Calling the extract function with the provided model, sample data, and mode
     response = client.chat.completions.create(
         response_model=UserDetails,
+        strict=False,
         messages=[
             {"role": "user", "content": sample_data},
         ],

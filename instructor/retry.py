@@ -83,6 +83,25 @@ def reask_messages(response: ChatCompletion, mode: Mode, exception: Exception):
             "message": f"Validation Error found:\n{exception}\nRecall the function correctly, fix the errors",
         }
         return
+    if mode == Mode.GEMINI_TOOLS:
+        from google.ai import generativelanguage as glm
+
+        yield {
+            "role": "function",
+            "parts": [
+                glm.Part(
+                    function_response=glm.FunctionResponse(
+                        name=response.parts[0].function_call.name,
+                        response={"error": f"Validation Error(s) found:\n{exception}"},
+                    )
+                ),
+            ],
+        }
+        yield {
+            "role": "user",
+            "parts": [f"Recall the function arguments correctly and fix the errors"],
+        }
+        return
     if mode == Mode.GEMINI_JSON:
         yield {
             "role": "user",
@@ -177,6 +196,7 @@ def retry_sync(
                     logger.debug(f"Error response: {response}")
                     if mode in {
                         Mode.GEMINI_JSON,
+                        Mode.GEMINI_TOOLS,
                         Mode.VERTEXAI_TOOLS,
                         Mode.VERTEXAI_JSON,
                     }:

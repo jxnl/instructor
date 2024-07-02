@@ -12,6 +12,7 @@ from typing import (
     Protocol,
     TypeVar,
 )
+from pydantic import BaseModel
 import os
 
 from openai.types import CompletionUsage as OpenAIUsage
@@ -250,6 +251,77 @@ def transform_to_gemini_prompt(
         messages_gemini[0]["parts"].insert(0, f"*{system_prompt}*")
 
     return messages_gemini
+
+
+def map_to_gemini_function_schema(obj: dict[str, Any]) -> dict[str, Any]:
+    """
+    Map OpenAPI schema to Gemini properties: gemini function call schemas are very strict
+
+    function declaration reference - https://github.com/google-gemini/generative-ai-js/blob/main/docs/reference/main/generative-ai.functiondeclarationschema.md
+
+    function property reference - https://github.com/google-gemini/generative-ai-js/blob/main/docs/reference/main/generative-ai.functiondeclarationschemaproperty.md
+    """
+
+    import jsonref  # type: ignore
+
+    class GeminiSchema(BaseModel):
+        description: str | None = None
+        required: list[str] | None = None
+        type: str
+        properties: dict[str, PropertySchema] | None = None
+
+        class Config:
+            exclude_unset = True
+
+    class PropertySchema(BaseModel):
+        description: str | None = None
+        enum: list[str] | None = None
+        example: Any | None = None
+        format: str | None = None
+        nullable: bool | None = None
+        items: GeminiSchema | None = None
+        required: list[str] | None = None
+        type: str
+        properties: GeminiSchema | None = None
+
+        class Config:
+            exclude_unset = True
+
+    schema: dict[str, Any] = jsonref.replace_refs(obj, lazy_load=False)  # type: ignore
+    schema.pop("$defs", "")
+
+    return GeminiSchema(**schema).model_dump(exclude_none=True)
+
+
+def update_gemini_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
+    map_openai_args_to_gemini = {
+        "max_tokens": "max_output_tokens",
+        "temperature": "temperature",
+        "n": "candidate_count",
+        "top_p": "top_p",
+        "stop": "stop_sequences",
+    }
+
+    # update gemini config if any params are set
+    for k, v in map_openai_args_to_gemini.items():
+        val = kwargs.pop(k, None)
+        if val == None:
+            continue
+        kwargs["generation_config"][v] = val
+
+    # gemini has a different prompt format and params from other providers
+    kwargs["contents"] = transform_to_gemini_prompt(kwargs.pop("messages"))
+
+    # minimize gemini safety related errors - model is highly prone to false alarms
+    from google.generativeai.types import HarmCategory, HarmBlockThreshold  # type: ignore
+
+    kwargs["safety_settings"] = kwargs.get("safety_settings", {}) | {
+        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+    }
+
+    return kwargs
 
 
 def disable_pydantic_error_url():

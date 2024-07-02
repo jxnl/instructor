@@ -42,6 +42,7 @@ class DocumentExtraction(BaseModel):
 def ask_ai(content, client) -> DocumentExtraction:
     resp: DocumentExtraction = client.chat.completions.create(
         response_model=DocumentExtraction,
+        strict=False,
         messages=[
             {
                 "role": "system",

@@ -16,7 +16,11 @@ from pydantic import (
 
 from instructor.exceptions import IncompleteOutputException
 from instructor.mode import Mode
-from instructor.utils import classproperty, extract_json_from_codeblock
+from instructor.utils import (
+    classproperty,
+    extract_json_from_codeblock,
+    map_to_gemini_function_schema,
+)
 
 T = TypeVar("T")
 
@@ -77,6 +81,17 @@ class OpenAISchema(BaseModel):
             "input_schema": cls.model_json_schema(),
         }
 
+    @classproperty
+    def gemini_schema(cls) -> Any:
+        import google.generativeai.types as genai_types
+
+        function = genai_types.FunctionDeclaration(
+            name=cls.openai_schema["name"],
+            description=cls.openai_schema["description"],
+            parameters=map_to_gemini_function_schema(cls.openai_schema["parameters"]),
+        )
+        return function
+
     @classmethod
     def from_response(
         cls,
@@ -114,6 +129,9 @@ class OpenAISchema(BaseModel):
 
         if mode == Mode.GEMINI_JSON:
             return cls.parse_gemini_json(completion, validation_context, strict)
+
+        if mode == Mode.GEMINI_TOOLS:
+            return cls.parse_gemini_tools(completion, validation_context, strict)
 
         if completion.choices[0].finish_reason == "length":
             raise IncompleteOutputException(last_completion=completion)
@@ -197,6 +215,22 @@ class OpenAISchema(BaseModel):
             parsed = json.loads(extra_text, strict=False)
             # Pydantic non-strict: https://docs.pydantic.dev/latest/concepts/strict_mode/
             return cls.model_validate(parsed, context=validation_context, strict=False)
+
+    @classmethod
+    def parse_gemini_tools(
+        cls: type[BaseModel],
+        completion: ChatCompletion,
+        validation_context: Optional[dict[str, Any]] = None,
+        strict: Optional[bool] = None,
+    ) -> BaseModel:
+        tool_call = completion.parts[0].function_call
+        assert (
+            tool_call.name == cls.openai_schema["name"]  # type: ignore[index]
+        ), "Tool name does not match"
+        # reference https://ai.google.dev/gemini-api/tutorials/extract_structured_data
+        response = type(tool_call).to_dict(tool_call)["args"]
+
+        return cls.model_validate(response, context=validation_context, strict=strict)
 
     @classmethod
     def parse_vertexai_tools(

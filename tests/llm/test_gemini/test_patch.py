@@ -18,6 +18,7 @@ def test_runmodel(model, mode):
     model = client.chat.completions.create(
         response_model=UserExtract,
         max_retries=2,
+        strict=False,
         messages=[
             {"role": "user", "content": "Extract jason is 25 years old"},
         ],
@@ -49,6 +50,7 @@ def test_runmodel_validator(model, mode):
     client = instructor.from_gemini(genai.GenerativeModel(model), mode=mode)
     model = client.chat.completions.create(
         response_model=UserExtractValidated,
+        strict=False,
         messages=[
             {"role": "user", "content": "Extract jason is 25 years old"},
         ],
