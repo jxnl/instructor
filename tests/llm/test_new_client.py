@@ -5,6 +5,7 @@ import instructor
 import anthropic
 import pytest
 from pydantic import BaseModel, Field
+from instructor.usage import UnifiedUsage
 
 
 class User(BaseModel):
@@ -134,16 +135,69 @@ async def test_async_client_chat_completions_create_with_response():
     client = openai.AsyncOpenAI()
     instructor_client = instructor.from_openai(client, model="gpt-3.5-turbo")
 
-    user, response = await instructor_client.chat.completions.create_with_completion(
-        response_model=User,
-        messages=[{"role": "user", "content": "Jason is 10"}],
-        temperature=0,
+    user, response, usage = (
+        await instructor_client.chat.completions.create_with_completion(
+            response_model=User,
+            messages=[{"role": "user", "content": "Jason is 10"}],
+            temperature=0,
+            with_usage=True,
+        )
     )
     from openai.types.chat import ChatCompletion
 
     assert user.name == "Jason"
     assert user.age == 10
     assert isinstance(response, ChatCompletion)
+    assert isinstance(usage, UnifiedUsage)
+
+    # Test without usage
+    user, response = await instructor_client.chat.completions.create_with_completion(
+        response_model=User,
+        messages=[{"role": "user", "content": "Jason is 10"}],
+        temperature=0,
+    )
+    assert user.name == "Jason"
+    assert user.age == 10
+    assert isinstance(response, ChatCompletion)
+
+
+@pytest.mark.asyncio
+async def test_async_client_chat_completions_create_with_usage():
+    import openai
+    import instructor
+
+    client = openai.AsyncOpenAI()
+    instructor_client = instructor.from_openai(client, model="gpt-3.5-turbo")
+
+    user, response, usage = (
+        await instructor_client.chat.completions.create_with_completion(
+            response_model=User,
+            messages=[{"role": "user", "content": "Jason is 10"}],
+            temperature=0,
+            with_usage=True,
+        )
+    )
+    from openai.types.chat import ChatCompletion
+
+    # Check the returned user object
+    assert isinstance(user, User)
+    assert user.name == "Jason"
+    assert user.age == 10
+
+    # Check the returned response object
+    assert isinstance(response, ChatCompletion)
+
+    # Check the returned usage object
+    assert isinstance(usage, UnifiedUsage)
+    assert hasattr(usage, "total_tokens")
+    assert usage.total_tokens > 0
+    assert hasattr(usage, "input_tokens")
+    assert usage.input_tokens > 0
+    assert hasattr(usage, "output_tokens")
+    assert usage.output_tokens > 0
+
+    # Additional checks to ensure the relationship between tokens
+    assert usage.total_tokens == usage.input_tokens + usage.output_tokens
 
 
 def test_client_from_anthropic_with_response():

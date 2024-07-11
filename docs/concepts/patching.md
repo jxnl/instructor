@@ -5,6 +5,7 @@ Instructor enhances client functionality with three new keywords for backwards c
 - `response_model`: Defines the response type for `chat.completions.create`.
 - `max_retries`: Determines retry attempts for failed `chat.completions.create` validations.
 - `validation_context`: Provides extra context to the validation process.
+- `with_usage`: Enables tracking of token usage when set to `True`.
 
 The default mode is `instructor.Mode.TOOLS` which is the recommended mode for OpenAI clients. This mode is the most stable and is the most recommended for OpenAI clients. The other modes are for other clients and are not recommended for OpenAI clients.
 
@@ -96,7 +97,6 @@ base_url = f'https://{LOCATION}-aiplatform.googleapis.com/v1beta1/projects/{PROJ
 client = instructor.from_openai(OpenAI(base_url=base_url, api_key=creds.token),mode=instructor.Mode.JSON)
 ```
 
-
 ### Gemini JSON Mode
 
 This mode uses Gemini's response mimetype field to generate a response in JSON format using the schema provided.
@@ -146,3 +146,9 @@ client = instructor.from_openai(
     mode=instructor.Mode.MD_JSON,
 )
 ```
+
+## Usage Tracking
+
+Instructor provides the ability to track token usage for your API calls. To enable usage tracking, set the `with_usage` parameter to `True` when calling methods like `create_with_completion`. This will return a `UnifiedUsage` object containing information about the `total_tokens`, `input_tokens`, and `output_tokens` used in the API call. They accumulate with each retry so you can get an accurate count of tokens used for each completion even when a retry fails.
+
+For more detailed information about usage tracking and the `UnifiedUsage` class, please refer to our [Usage](./usage.md).

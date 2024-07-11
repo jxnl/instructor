@@ -5,35 +5,22 @@ import json
 import logging
 from collections.abc import AsyncGenerator, Generator, Iterable
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     Generic,
-    Protocol,
     TypeVar,
 )
 import os
 
-from openai.types import CompletionUsage as OpenAIUsage
 from openai.types.chat import (
-    ChatCompletion,
     ChatCompletionMessage,
     ChatCompletionMessageParam,
 )
 
-if TYPE_CHECKING:
-    from anthropic.types import Usage as AnthropicUsage
-
-
 logger = logging.getLogger("instructor")
 R_co = TypeVar("R_co", covariant=True)
-T_Model = TypeVar("T_Model", bound="Response")
 
 from enum import Enum
-
-
-class Response(Protocol):
-    usage: OpenAIUsage | AnthropicUsage
 
 
 class Provider(Enum):
@@ -118,36 +105,6 @@ async def extract_json_from_stream_async(
                     break  # Cease yielding upon closing the current JSON object
             elif capturing:
                 yield char
-
-
-def update_total_usage(
-    response: T_Model,
-    total_usage: OpenAIUsage | AnthropicUsage,
-) -> T_Model | ChatCompletion:
-    response_usage = getattr(response, "usage", None)
-    if isinstance(response_usage, OpenAIUsage) and isinstance(total_usage, OpenAIUsage):
-        total_usage.completion_tokens += response_usage.completion_tokens or 0
-        total_usage.prompt_tokens += response_usage.prompt_tokens or 0
-        total_usage.total_tokens += response_usage.total_tokens or 0
-        response.usage = total_usage  # Replace each response usage with the total usage
-        return response
-
-    # Anthropic usage.
-    try:
-        from anthropic.types import Usage as AnthropicUsage
-
-        if isinstance(response_usage, AnthropicUsage) and isinstance(
-            total_usage, AnthropicUsage
-        ):
-            total_usage.input_tokens += response_usage.input_tokens or 0
-            total_usage.output_tokens += response_usage.output_tokens or 0
-            response.usage = total_usage
-            return response
-    except ImportError:
-        pass
-
-    logger.debug("No compatible response.usage found, token usage not updated.")
-    return response
 
 
 def dump_message(message: ChatCompletionMessage) -> ChatCompletionMessageParam:
