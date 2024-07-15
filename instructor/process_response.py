@@ -258,7 +258,7 @@ def handle_response_model(
                 As a genius expert, your task is to understand the content and provide
                 the parsed objects in json that match the following json_schema:\n
 
-                {json.dumps(response_model.model_json_schema(), indent=2)}
+                {json.dumps(response_model.model_json_schema(), indent=2, ensure_ascii=True)}
 
                 Make sure to return an instance of the JSON, not the schema itself
                 """
@@ -332,7 +332,7 @@ def handle_response_model(
             You must only response in JSON format that adheres to the following schema:
 
             <JSON_SCHEMA>
-            {json.dumps(response_model.model_json_schema(), indent=2)}
+            {json.dumps(response_model.model_json_schema(), indent=2, ensure_ascii=True)}
             </JSON_SCHEMA>
             """
             new_kwargs["system"] = dedent(new_kwargs["system"])
@@ -379,7 +379,7 @@ The output must be a valid JSON object that `{response_model.__name__}.model_val
                 As a genius expert, your task is to understand the content and provide
                 the parsed objects in json that match the following json_schema:\n
 
-                {json.dumps(response_model.model_json_schema(), indent=2)}
+                {json.dumps(response_model.model_json_schema(), indent=2, ensure_ascii=True)}
 
                 Make sure to return an instance of the JSON, not the schema itself
                 """
