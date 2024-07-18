@@ -17,6 +17,34 @@ class Order(BaseModel):
     customer: str
 
 
+def test_yaml(client):
+    client = instructor.patch(client, mode=instructor.Mode.MD_YAML)
+    content = """
+  Order Details:
+  Customer: Jason
+  Items:
+
+  Name: Apple, Price: 0.50
+  Name: Bread, Price: 2.00
+  Name: Milk, Price: 1.50
+  """
+
+    resp = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        response_model=Order,
+        messages=[
+            {
+                "role": "user",
+                "content": content,
+            },
+        ],
+    )
+    assert len(resp.items) == 3
+    assert {x.name.lower() for x in resp.items} == {"apple", "bread", "milk"}
+    assert {x.price for x in resp.items} == {0.5, 2.0, 1.5}
+    assert resp.customer.lower() == "jason"
+
+
 @pytest.mark.parametrize("model, mode", product(models, modes))
 def test_nested(model, mode, client):
     client = instructor.patch(client, mode=mode)

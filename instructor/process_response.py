@@ -13,6 +13,7 @@ from openai.types.chat import ChatCompletion
 from pydantic import BaseModel, create_model
 
 import json
+import yaml
 import inspect
 import logging
 from typing import (
@@ -250,6 +251,38 @@ def handle_response_model(
                     "type": "function",
                     "function": {"name": response_model.openai_schema["name"]},
                 }
+        elif mode in {Mode.MD_YAML}:
+            message = dedent(
+                f"""
+                As a genius expert, your task is to understand the content and provide
+                the parsed objects in yaml that match the following yaml_schema:\n
+
+                {yaml.dump(response_model.model_json_schema(), indent=2)}
+
+                Make sure to return an instance of the YAML, not the schema itself
+                """
+            )
+
+            new_kwargs["messages"].append(
+                {
+                    "role": "user",
+                    "content": "Return the correct YAML response within a ```yaml codeblock. not the YAML_SCHEMA",
+                },
+            )
+
+            # check that the first message is a system message
+            # if it is not, add a system message to the beginning
+            if new_kwargs["messages"][0]["role"] != "system":
+                new_kwargs["messages"].insert(
+                    0,
+                    {
+                        "role": "system",
+                        "content": message,
+                    },
+                )
+            # if it is, system append the schema to the end
+            else:
+                new_kwargs["messages"][0]["content"] += f"\n\n{message}"
         elif mode in {Mode.JSON, Mode.MD_JSON, Mode.JSON_SCHEMA}:
             # If its a JSON Mode we need to massage the prompt a bit
             # in order to get the response we want in a json format

@@ -22,6 +22,7 @@ class Mode(enum.Enum, metaclass=_WarnOnFunctionsAccessEnumMeta):
     MISTRAL_TOOLS = "mistral_tools"
     JSON = "json_mode"
     MD_JSON = "markdown_json_mode"
+    MD_YAML = "markdown_yaml_mode"
     JSON_SCHEMA = "json_schema_mode"
     ANTHROPIC_TOOLS = "anthropic_tools"
     ANTHROPIC_JSON = "anthropic_json"

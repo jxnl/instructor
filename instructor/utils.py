@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import json
+import yaml
 import logging
 from collections.abc import AsyncGenerator, Generator, Iterable
 from typing import (
@@ -78,6 +79,16 @@ def extract_json_from_codeblock(content: str) -> str:
     first_paren = content.find("{")
     last_paren = content.rfind("}")
     return content[first_paren : last_paren + 1]
+
+
+def extract_json_from_yaml_codeblock(content: str) -> str:
+    yaml_start = content.find("```yaml")
+    if yaml_start != -1:
+        yaml_end = content.find("```", yaml_start + 7)
+        if yaml_end != -1:
+            yaml_string = yaml.safe_load(content[yaml_start + 7 : yaml_end].strip())
+            return json.dumps(yaml_string)
+    return ""
 
 
 def extract_json_from_stream(chunks: Iterable[str]) -> Generator[str, None, None]:

@@ -146,3 +146,14 @@ client = instructor.from_openai(
     mode=instructor.Mode.MD_JSON,
 )
 ```
+
+## YAML Mode
+
+This mode can be used to interact with the model in YAML in order to minimize the number of tokens consumed. Note that YAML output is not explicitly supported by models and this may result in multiple retries to get valid output.
+
+```python
+import instructor
+from openai import OpenAI
+
+client = instructor.from_openai(OpenAI(), mode=instructor.Mode.MD_YAML)
+```

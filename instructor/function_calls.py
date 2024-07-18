@@ -16,7 +16,11 @@ from pydantic import (
 
 from instructor.exceptions import IncompleteOutputException
 from instructor.mode import Mode
-from instructor.utils import classproperty, extract_json_from_codeblock
+from instructor.utils import (
+    classproperty,
+    extract_json_from_codeblock,
+    extract_json_from_yaml_codeblock,
+)
 
 T = TypeVar("T")
 
@@ -126,6 +130,8 @@ class OpenAISchema(BaseModel):
 
         if mode in {Mode.JSON, Mode.JSON_SCHEMA, Mode.MD_JSON}:
             return cls.parse_json(completion, validation_context, strict)
+        if mode in {Mode.MD_YAML}:
+            return cls.parse_yaml(completion, validation_context, strict)
 
         raise ValueError(f"Invalid patch mode: {mode}")
 
@@ -287,6 +293,22 @@ class OpenAISchema(BaseModel):
     ) -> BaseModel:
         message = completion.choices[0].message.content or ""
         message = extract_json_from_codeblock(message)
+
+        return cls.model_validate_json(
+            message,
+            context=validation_context,
+            strict=strict,
+        )
+
+    @classmethod
+    def parse_yaml(
+        cls: type[BaseModel],
+        completion: ChatCompletion,
+        validation_context: Optional[dict[str, Any]] = None,
+        strict: Optional[bool] = None,
+    ) -> BaseModel:
+        message = completion.choices[0].message.content or ""
+        message = extract_json_from_yaml_codeblock(message)
 
         return cls.model_validate_json(
             message,
