@@ -133,9 +133,10 @@ assert resp.age == 25
 ### Using Gemini Models
 
 Make sure you [install](https://ai.google.dev/api/python/google/generativeai#setup) the Google AI Python SDK. You should set a `GOOGLE_API_KEY` environment variable with your API key.
+Gemini tool calling also requires `jsonref` to be installed.
 
 ```
-pip install google-generativeai
+pip install google-generativeai jsonref
 ```
 
 ```python

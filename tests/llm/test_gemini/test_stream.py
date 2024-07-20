@@ -20,6 +20,7 @@ def test_iterable_model(model, mode, stream):
     model = client.chat.completions.create(
         response_model=Iterable[UserExtract],
         max_retries=2,
+        strict=False,
         stream=stream,
         messages=[
             {"role": "user", "content": "Make two up people"},
@@ -36,6 +37,7 @@ def test_partial_model(model, mode):
         response_model=Partial[UserExtract],
         max_retries=2,
         stream=True,
+        strict=False,
         messages=[
             {"role": "user", "content": "Jason Liu is 12 years old"},
         ],

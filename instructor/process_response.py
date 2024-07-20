@@ -26,7 +26,6 @@ from typing_extensions import ParamSpec
 
 from instructor.mode import Mode
 
-from .utils import transform_to_gemini_prompt
 
 logger = logging.getLogger("instructor")
 
@@ -396,6 +395,9 @@ The output must be a valid JSON object that `{response_model.__name__}.model_val
             assert (
                 "model" not in new_kwargs
             ), "Gemini `model` must be set while patching the client, not passed as a parameter to the create method"
+
+            from .utils import update_gemini_kwargs
+
             message = dedent(
                 f"""
                 As a genius expert, your task is to understand the content and provide
@@ -425,34 +427,22 @@ The output must be a valid JSON object that `{response_model.__name__}.model_val
                 "generation_config", {}
             ) | {"response_mime_type": "application/json"}
 
-            map_openai_args_to_gemini = {
-                "max_tokens": "max_output_tokens",
-                "temperature": "temperature",
-                "n": "candidate_count",
-                "top_p": "top_p",
-                "stop": "stop_sequences",
+            new_kwargs = update_gemini_kwargs(new_kwargs)
+
+        elif mode == Mode.GEMINI_TOOLS:
+            assert (
+                "model" not in new_kwargs
+            ), "Gemini `model` must be set while patching the client, not passed as a parameter to the create method"
+            from .utils import update_gemini_kwargs
+
+            new_kwargs["tools"] = [response_model.gemini_schema]
+            new_kwargs["tool_config"] = {
+                "function_calling_config": {
+                    "mode": "ANY",
+                },
             }
 
-            # update gemini config if any params are set
-            for k, v in map_openai_args_to_gemini.items():
-                val = new_kwargs.pop(k, None)
-                if val == None:
-                    continue
-                new_kwargs["generation_config"][v] = val
-
-            # gemini has a different prompt format and params from other providers
-            new_kwargs["contents"] = transform_to_gemini_prompt(
-                new_kwargs.pop("messages")
-            )
-
-            # minimize gemini safety related errors - model is highly prone to false alarms
-            from google.generativeai.types import HarmCategory, HarmBlockThreshold
-
-            new_kwargs["safety_settings"] = new_kwargs.get("safety_settings", {}) | {
-                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-            }
+            new_kwargs = update_gemini_kwargs(new_kwargs)
         elif mode == Mode.VERTEXAI_TOOLS:
             from instructor.client_vertexai import vertexai_process_response
 

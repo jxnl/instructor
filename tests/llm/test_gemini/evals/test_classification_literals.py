@@ -28,11 +28,6 @@ data = [
 def test_classification(model, data, mode):
     client = instructor.from_gemini(genai.GenerativeModel(model), mode=mode)
 
-    if mode == instructor.Mode.JSON and model in {"gpt-3.5-turbo", "gpt-4"}:
-        pytest.skip(
-            "JSON mode is not supported for gpt-3.5-turbo and gpt-4, skipping test"
-        )
-
     input, expected = data
     resp = client.chat.completions.create(
         response_model=SinglePrediction,

@@ -42,6 +42,7 @@ def test_classification(model, data, mode):
     input, expected = data
     resp = client.chat.completions.create(
         response_model=SinglePrediction,
+        strict=False,
         messages=[
             {
                 "role": "user",
@@ -88,6 +89,7 @@ def test_multi_classify(model, data, mode):
 
     resp = client.chat.completions.create(
         response_model=MultiClassPrediction,
+        strict=False,
         messages=[
             {
                 "role": "user",
