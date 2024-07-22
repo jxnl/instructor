@@ -9,7 +9,6 @@ from typing import (
 )
 from collections.abc import Awaitable
 from typing_extensions import ParamSpec
-
 from openai import AsyncOpenAI, OpenAI
 from pydantic import BaseModel
 
@@ -116,6 +115,7 @@ def patch(
         response_model, new_kwargs = handle_response_model(
             response_model=response_model, mode=mode, **kwargs
         )
+
         response = await retry_async(
             func=func,
             response_model=response_model,

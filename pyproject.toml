@@ -19,6 +19,7 @@ aiohttp = "^3.9.1"
 tenacity = "^8.4.1"
 pydantic-core = "^2.18.0"
 jiter = "^0.4.1"
+logfire-api = "^0.47.0"
 
 # dependency versions for extras
 fastapi = { version = "^0.109.2", optional = true }

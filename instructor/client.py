@@ -16,6 +16,7 @@ from collections.abc import Generator, Iterable, Awaitable, AsyncGenerator
 from typing_extensions import Self
 from pydantic import BaseModel
 from instructor.dsl.partial import Partial
+import logfire_api as logfire
 
 
 T = TypeVar("T", bound=Union[BaseModel, "Iterable[Any]", "Partial[Any]"])
@@ -65,8 +66,7 @@ class Instructor:
         validation_context: dict[str, Any] | None = None,
         strict: bool = True,
         **kwargs: Any,
-    ) -> Awaitable[T]:
-        ...
+    ) -> Awaitable[T]: ...
 
     @overload
     def create(
@@ -77,8 +77,7 @@ class Instructor:
         validation_context: dict[str, Any] | None = None,
         strict: bool = True,
         **kwargs: Any,
-    ) -> T:
-        ...
+    ) -> T: ...
 
     @overload
     def create(
@@ -111,16 +110,29 @@ class Instructor:
         strict: bool = True,
         **kwargs: Any,
     ) -> T | Any | Awaitable[T] | Awaitable[Any]:
-        kwargs = self.handle_kwargs(kwargs)
-
-        return self.create_fn(
-            response_model=response_model,
+        with logfire.span(
+            "Creating Chat Completion",
+            response_model=response_model.model_json_schema()  # type:ignore
+            if response_model
+            else None,
             messages=messages,
             max_retries=max_retries,
             validation_context=validation_context,
             strict=strict,
             **kwargs,
-        )
+        ):
+            kwargs = self.handle_kwargs(kwargs)
+
+            result = self.create_fn(
+                response_model=response_model,
+                messages=messages,
+                max_retries=max_retries,
+                validation_context=validation_context,
+                strict=strict,
+                **kwargs,
+            )
+            logfire.info("Result", result=result)  # type:ignore
+            return result
 
     @overload
     def create_partial(
@@ -131,8 +143,7 @@ class Instructor:
         validation_context: dict[str, Any] | None = None,
         strict: bool = True,
         **kwargs: Any,
-    ) -> AsyncGenerator[T, None]:
-        ...
+    ) -> AsyncGenerator[T, None]: ...
 
     @overload
     def create_partial(
@@ -143,8 +154,7 @@ class Instructor:
         validation_context: dict[str, Any] | None = None,
         strict: bool = True,
         **kwargs: Any,
-    ) -> Generator[T, None, None]:
-        ...
+    ) -> Generator[T, None, None]: ...
 
     def create_partial(
         self,
@@ -155,19 +165,30 @@ class Instructor:
         strict: bool = True,
         **kwargs: Any,
     ) -> Generator[T, None, None] | AsyncGenerator[T, None]:
-        kwargs["stream"] = True
-
-        kwargs = self.handle_kwargs(kwargs)
-
-        response_model = instructor.Partial[response_model]  # type: ignore
-        return self.create_fn(
+        with logfire.span(
+            "Creating Streaming Chat Completion",
+            response_model=response_model.model_json_schema()  # type:ignore
+            if response_model
+            else None,
             messages=messages,
-            response_model=response_model,
             max_retries=max_retries,
             validation_context=validation_context,
             strict=strict,
             **kwargs,
-        )
+        ):
+            kwargs["stream"] = True
+
+            kwargs = self.handle_kwargs(kwargs)
+
+            response_model = instructor.Partial[response_model]  # type: ignore
+            return self.create_fn(
+                messages=messages,
+                response_model=response_model,
+                max_retries=max_retries,
+                validation_context=validation_context,
+                strict=strict,
+                **kwargs,
+            )
 
     @overload
     def create_iterable(
@@ -178,8 +199,7 @@ class Instructor:
         validation_context: dict[str, Any] | None = None,
         strict: bool = True,
         **kwargs: Any,
-    ) -> AsyncGenerator[T, None]:
-        ...
+    ) -> AsyncGenerator[T, None]: ...
 
     @overload
     def create_iterable(
@@ -190,8 +210,7 @@ class Instructor:
         validation_context: dict[str, Any] | None = None,
         strict: bool = True,
         **kwargs: Any,
-    ) -> Generator[T, None, None]:
-        ...
+    ) -> Generator[T, None, None]: ...
 
     def create_iterable(
         self,
@@ -202,18 +221,29 @@ class Instructor:
         strict: bool = True,
         **kwargs: Any,
     ) -> Generator[T, None, None] | AsyncGenerator[T, None]:
-        kwargs["stream"] = True
-        kwargs = self.handle_kwargs(kwargs)
-
-        response_model = Iterable[response_model]  # type: ignore
-        return self.create_fn(
+        with logfire.span(
+            "Creating Iterable Chat Completion",
+            response_model=response_model.model_json_schema()  # type:ignore
+            if response_model
+            else None,
             messages=messages,
-            response_model=response_model,
             max_retries=max_retries,
             validation_context=validation_context,
             strict=strict,
             **kwargs,
-        )
+        ):
+            kwargs["stream"] = True
+            kwargs = self.handle_kwargs(kwargs)
+
+            response_model = Iterable[response_model]  # type: ignore
+            return self.create_fn(
+                messages=messages,
+                response_model=response_model,
+                max_retries=max_retries,
+                validation_context=validation_context,
+                strict=strict,
+                **kwargs,
+            )
 
     @overload
     def create_with_completion(
@@ -224,8 +254,7 @@ class Instructor:
         validation_context: dict[str, Any] | None = None,
         strict: bool = True,
         **kwargs: Any,
-    ) -> Awaitable[tuple[T, Any]]:
-        ...
+    ) -> Awaitable[tuple[T, Any]]: ...
 
     @overload
     def create_with_completion(
@@ -236,8 +265,7 @@ class Instructor:
         validation_context: dict[str, Any] | None = None,
         strict: bool = True,
         **kwargs: Any,
-    ) -> tuple[T, Any]:
-        ...
+    ) -> tuple[T, Any]: ...
 
     def create_with_completion(
         self,
@@ -248,16 +276,27 @@ class Instructor:
         strict: bool = True,
         **kwargs: Any,
     ) -> tuple[T, Any] | Awaitable[tuple[T, Any]]:
-        kwargs = self.handle_kwargs(kwargs)
-        model = self.create_fn(
+        with logfire.span(
+            "Creating Chat Completion with Original Completion",
+            response_model=response_model.model_json_schema()  # type:ignore
+            if response_model
+            else None,
             messages=messages,
-            response_model=response_model,
             max_retries=max_retries,
             validation_context=validation_context,
             strict=strict,
             **kwargs,
-        )
-        return model, model._raw_response
+        ):
+            kwargs = self.handle_kwargs(kwargs)
+            model = self.create_fn(
+                messages=messages,
+                response_model=response_model,
+                max_retries=max_retries,
+                validation_context=validation_context,
+                strict=strict,
+                **kwargs,
+            )
+            return model, model._raw_response
 
     def handle_kwargs(self, kwargs: dict[str, Any]) -> dict[str, Any]:
         for key, value in self.kwargs.items():
@@ -296,15 +335,28 @@ class AsyncInstructor(Instructor):
         strict: bool = True,
         **kwargs: Any,
     ) -> T | Any:
-        kwargs = self.handle_kwargs(kwargs)
-        return await self.create_fn(
-            response_model=response_model,
-            validation_context=validation_context,
-            max_retries=max_retries,
+        with logfire.span(
+            "Creating Async Chat Completion",
+            response_model=response_model.model_json_schema()  # type:ignore
+            if response_model
+            else None,
             messages=messages,
+            max_retries=max_retries,
+            validation_context=validation_context,
             strict=strict,
             **kwargs,
-        )
+        ):
+            kwargs = self.handle_kwargs(kwargs)
+            result = await self.create_fn(
+                response_model=response_model,
+                validation_context=validation_context,
+                max_retries=max_retries,
+                messages=messages,
+                strict=strict,
+                **kwargs,
+            )
+            logfire.info("Result", result=result)  # type:ignore
+            return result
 
     async def create_partial(
         self,
@@ -315,17 +367,31 @@ class AsyncInstructor(Instructor):
         strict: bool = True,
         **kwargs: Any,
     ) -> AsyncGenerator[T, None]:
-        kwargs = self.handle_kwargs(kwargs)
-        kwargs["stream"] = True
-        async for item in await self.create_fn(
-            response_model=instructor.Partial[response_model],  # type: ignore
-            validation_context=validation_context,
-            max_retries=max_retries,
+        with logfire.span(
+            "Creating Async Partial Chat Completion",
+            response_model=response_model.model_json_schema()  # type:ignore
+            if response_model
+            else None,
             messages=messages,
+            max_retries=max_retries,
+            validation_context=validation_context,
             strict=strict,
             **kwargs,
         ):
-            yield item
+            kwargs = self.handle_kwargs(kwargs)
+            kwargs["stream"] = True
+            final_result = None
+            async for item in await self.create_fn(
+                response_model=instructor.Partial[response_model],  # type: ignore
+                validation_context=validation_context,
+                max_retries=max_retries,
+                messages=messages,
+                strict=strict,
+                **kwargs,
+            ):
+                final_result = item
+                yield item
+            logfire.info("Iterable Result", item=final_result)  # type:ignore
 
     async def create_iterable(
         self,
@@ -336,17 +402,29 @@ class AsyncInstructor(Instructor):
         strict: bool = True,
         **kwargs: Any,
     ) -> AsyncGenerator[T, None]:
-        kwargs = self.handle_kwargs(kwargs)
-        kwargs["stream"] = True
-        async for item in await self.create_fn(
-            response_model=Iterable[response_model],
-            validation_context=validation_context,
-            max_retries=max_retries,
+        with logfire.span(
+            "Creating Async Iterable Chat Completion",
+            response_model=response_model.model_json_schema()  # type:ignore
+            if response_model
+            else None,
             messages=messages,
+            max_retries=max_retries,
+            validation_context=validation_context,
             strict=strict,
             **kwargs,
         ):
-            yield item
+            kwargs = self.handle_kwargs(kwargs)
+            kwargs["stream"] = True
+            async for item in await self.create_fn(
+                response_model=Iterable[response_model],
+                validation_context=validation_context,
+                max_retries=max_retries,
+                messages=messages,
+                strict=strict,
+                **kwargs,
+            ):
+                logfire.info("Iterable Generation Result", item=item)  # type:ignore
+                yield item
 
     async def create_with_completion(
         self,
@@ -357,16 +435,31 @@ class AsyncInstructor(Instructor):
         strict: bool = True,
         **kwargs: Any,
     ) -> tuple[T, Any]:
-        kwargs = self.handle_kwargs(kwargs)
-        response = await self.create_fn(
-            response_model=response_model,
-            validation_context=validation_context,
-            max_retries=max_retries,
+        with logfire.span(
+            "Creating Async Chat Completion with Original Completion",
+            response_model=response_model.model_json_schema()  # type:ignore
+            if response_model
+            else None,
             messages=messages,
+            max_retries=max_retries,
+            validation_context=validation_context,
             strict=strict,
             **kwargs,
-        )
-        return response, response._raw_response
+        ):
+            kwargs = self.handle_kwargs(kwargs)
+            response = await self.create_fn(
+                response_model=response_model,
+                validation_context=validation_context,
+                max_retries=max_retries,
+                messages=messages,
+                strict=strict,
+                **kwargs,
+            )
+            logfire.info(  # type:ignore
+                "Result", result=response, original_completion=response._raw_response
+            )
+
+            return response, response._raw_response
 
 
 @overload
@@ -451,8 +544,7 @@ def from_litellm(
     completion: Callable[..., Any],
     mode: instructor.Mode = instructor.Mode.TOOLS,
     **kwargs: Any,
-) -> Instructor:
-    ...
+) -> Instructor: ...
 
 
 @overload

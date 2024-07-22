@@ -203,6 +203,7 @@ def handle_response_model(
     Returns:
         Union[Type[OpenAISchema], dict]: The response model to use for parsing the response
     """
+
     new_kwargs = kwargs.copy()
     if response_model is not None:
         # Handles the case where the response_model is a simple type
