@@ -21,7 +21,7 @@ from .client import (
     from_litellm,
     Provider,
 )
-from .validators import async_field_validator, async_model_validator
+from .validators import async_field_validator, async_model_validator, AsyncInstructMixin
 
 __all__ = [
     "Instructor",
@@ -46,6 +46,7 @@ __all__ = [
     "handle_response_model",
     "async_field_validator",
     "async_model_validator",
+    "AsyncInstructMixin",
 ]
 
 

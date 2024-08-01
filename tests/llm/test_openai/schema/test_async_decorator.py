@@ -5,14 +5,14 @@ import instructor
 from openai import AsyncOpenAI
 from instructor import from_openai
 from ..util import models, modes
-from instructor import async_field_validator, async_model_validator
+from instructor import async_field_validator, async_model_validator, AsyncInstructMixin
 from instructor.function_calls import openai_schema
 from pydantic import BaseModel, Field
 from enum import Enum
 from typing import Optional, Union, Literal
 
 
-class UserExtractValidated(BaseModel):
+class UserExtractValidated(BaseModel, AsyncInstructMixin):
     name: str
     age: int
 
@@ -27,7 +27,6 @@ class UserExtractValidated(BaseModel):
 
 @pytest.mark.parametrize("model, mode", product(models, modes))
 @pytest.mark.asyncio
-@pytest.mark.skip
 async def test_simple_validator(model, mode, aclient):
     aclient = instructor.from_openai(aclient, mode=mode)
     model = await aclient.chat.completions.create(
@@ -42,12 +41,12 @@ async def test_simple_validator(model, mode, aclient):
     assert model.name == "JASON"
 
 
-class ValidationResult(BaseModel):
+class ValidationResult(BaseModel, AsyncInstructMixin):
     chain_of_thought: str
     is_valid: bool
 
 
-class ExtractedContent(BaseModel):
+class ExtractedContent(BaseModel, AsyncInstructMixin):
     relevant_question: str
 
     @async_field_validator("relevant_question")
@@ -81,7 +80,6 @@ class ExtractedContent(BaseModel):
 
 @pytest.mark.parametrize("model, mode", product(models, modes))
 @pytest.mark.asyncio
-@pytest.mark.skip
 async def test_async_validator(model, mode, aclient):
     aclient = instructor.from_openai(aclient, mode=mode)
     content = """
@@ -118,9 +116,8 @@ async def test_async_validator(model, mode, aclient):
 
 @pytest.mark.parametrize("model, mode", product(models, modes))
 @pytest.mark.asyncio
-@pytest.mark.skip
 async def test_nested_model(model, mode, aclient):
-    class Users(BaseModel):
+    class Users(BaseModel, AsyncInstructMixin):
         users: list[UserExtractValidated]
 
     aclient = instructor.from_openai(aclient, mode=mode)
@@ -141,9 +138,8 @@ async def test_nested_model(model, mode, aclient):
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip
 async def test_field_validator():
-    class User(BaseModel):
+    class User(BaseModel, AsyncInstructMixin):
         name: str
         label: str
 
@@ -164,9 +160,8 @@ async def test_field_validator():
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip
 async def test_union_field_validator():
-    class User(BaseModel):
+    class User(BaseModel, AsyncInstructMixin):
         name: str
         label: str
 
@@ -187,9 +182,8 @@ async def test_union_field_validator():
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip
 async def test_model_validator():
-    class User(BaseModel):
+    class User(BaseModel, AsyncInstructMixin):
         name: str
         label: str
 
@@ -209,9 +203,8 @@ async def test_model_validator():
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip
 async def test_parsing_nested_field():
-    class Users(BaseModel):
+    class Users(BaseModel, AsyncInstructMixin):
         users: list[UserExtractValidated]
 
     exceptions = await openai_schema(Users)(
@@ -226,16 +219,15 @@ async def test_parsing_nested_field():
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip
 async def test_context_passing_in_nested_model():
-    class ModelValidationCheck(BaseModel):
+    class ModelValidationCheck(BaseModel, AsyncInstructMixin):
         user_names: list[str]
 
         @async_model_validator()
         def validate_model(self, info: ValidationInfo):
             raise ValueError(f"Invalid Error but with {info.context}!")
 
-    class ModelValidationWrapper(BaseModel):
+    class ModelValidationWrapper(BaseModel, AsyncInstructMixin):
         model: ModelValidationCheck
 
     res = await openai_schema(ModelValidationWrapper)(
@@ -250,9 +242,8 @@ async def test_context_passing_in_nested_model():
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip
 async def test_context_passing_in_nested_field_validator():
-    class ModelValidationCheck(BaseModel):
+    class ModelValidationCheck(BaseModel, AsyncInstructMixin):
         user_names: list[str]
 
         @async_field_validator("user_names")
@@ -260,7 +251,7 @@ async def test_context_passing_in_nested_field_validator():
             assert len(v) > 0
             raise ValueError(f"Invalid Error but with {info.context}!")
 
-    class ModelValidationWrapper(BaseModel):
+    class ModelValidationWrapper(BaseModel, AsyncInstructMixin):
         model: ModelValidationCheck
 
     res = await openai_schema(ModelValidationWrapper)(
@@ -275,9 +266,8 @@ async def test_context_passing_in_nested_field_validator():
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip
 async def test_openai_schema_parser():
-    class AdminUser(BaseModel):
+    class AdminUser(BaseModel, AsyncInstructMixin):
         name: str
         age: int
         email: str
@@ -290,7 +280,7 @@ async def test_openai_schema_parser():
                 )
             return v
 
-    class User(BaseModel):
+    class User(BaseModel, AsyncInstructMixin):
         name: str
         age: int
 
@@ -302,7 +292,7 @@ async def test_openai_schema_parser():
                 )
             return v
 
-    class Users(BaseModel):
+    class Users(BaseModel, AsyncInstructMixin):
         users: list[Union[User, AdminUser]]
 
     resp = openai_schema(Users)(
@@ -321,21 +311,19 @@ async def test_openai_schema_parser():
     assert len(coros) == 2
 
 
-class User(BaseModel):
+class User(BaseModel, AsyncInstructMixin):
     name: str = Field(description="User's name")
     age: int = Field(description="User's age")
     email: str = Field(description="User's email address")
 
 
-@pytest.mark.skip
 def test_openai_schema_serialization():
     UserSchema = openai_schema(User)
     assert User.model_json_schema() == UserSchema.model_json_schema()
 
 
-@pytest.mark.skip
 def test_openai_schema_float_and_bool():
-    class FloatBoolModel(BaseModel):
+    class FloatBoolModel(BaseModel, AsyncInstructMixin):
         price: float = Field(description="Price of an item")
         is_available: bool = Field(description="Availability status")
 
@@ -343,9 +331,8 @@ def test_openai_schema_float_and_bool():
     assert FloatBoolModel.model_json_schema() == FloatBoolSchema.model_json_schema()
 
 
-@pytest.mark.skip
 def test_openai_schema_bytes_and_literal():
-    class BytesLiteralModel(BaseModel):
+    class BytesLiteralModel(BaseModel, AsyncInstructMixin):
         data: bytes = Field(description="Binary data")
         status: Literal["active", "inactive"] = Field(description="Current status")
 
@@ -355,18 +342,16 @@ def test_openai_schema_bytes_and_literal():
     )
 
 
-@pytest.mark.skip
 def test_nested_class():
-    class Users(BaseModel):
+    class Users(BaseModel, AsyncInstructMixin):
         users: list[User]
         user: User
 
     assert Users.model_json_schema() == openai_schema(Users).model_json_schema()
 
 
-@pytest.mark.skip
 def test_nested_class_with_async_decorators():
-    class NestedUserWithValidation(BaseModel):
+    class NestedUserWithValidation(BaseModel, AsyncInstructMixin):
         name: str
 
         @async_field_validator("name")
@@ -380,9 +365,8 @@ def test_nested_class_with_async_decorators():
     assert Users.model_json_schema() == openai_schema(Users).model_json_schema()
 
 
-@pytest.mark.skip
 def test_nested_class_with_multiple_async_decorators():
-    class User(BaseModel):
+    class User(BaseModel, AsyncInstructMixin):
         name: str
         age: int
 
@@ -393,7 +377,7 @@ def test_nested_class_with_multiple_async_decorators():
                 raise ValueError("Age must be non-negative")
             return self
 
-    class Users(BaseModel):
+    class Users(BaseModel, AsyncInstructMixin):
         users: list[User]
         user: User
 
@@ -407,9 +391,8 @@ def test_nested_class_with_multiple_async_decorators():
     assert Users.model_json_schema() == openai_schema(Users).model_json_schema()
 
 
-@pytest.mark.skip
 def test_has_async_validators():
-    class UserWithAsyncValidators(BaseModel):
+    class UserWithAsyncValidators(BaseModel, AsyncInstructMixin):
         name: str
         age: int
 
@@ -425,7 +408,7 @@ def test_has_async_validators():
                 raise ValueError("Age must be non-negative")
             return self
 
-    class UserWithoutAsyncValidators(BaseModel):
+    class UserWithoutAsyncValidators(BaseModel, AsyncInstructMixin):
         name: str
         age: int
 
@@ -435,7 +418,7 @@ def test_has_async_validators():
     assert user_with.has_async_validators() == True
     assert user_without.has_async_validators() == False
 
-    class NestedUsers(BaseModel):
+    class NestedUsers(BaseModel, AsyncInstructMixin):
         user_with: UserWithAsyncValidators
         user_without: UserWithoutAsyncValidators
 
@@ -448,7 +431,7 @@ def test_has_async_validators():
 
     assert nested_users.has_async_validators() == True
 
-    class AllWithoutValidators(BaseModel):
+    class AllWithoutValidators(BaseModel, AsyncInstructMixin):
         users: list[UserWithoutAsyncValidators]
 
     all_without = openai_schema(AllWithoutValidators)(
@@ -462,7 +445,6 @@ def test_has_async_validators():
     assert all_without.has_async_validators() == False
 
 
-@pytest.mark.skip
 def test_schema_optional_and_enum():
     class QueryType(str, Enum):
         DOCUMENT_CONTENT = "document_content"
@@ -471,7 +453,7 @@ def test_schema_optional_and_enum():
         RELATED_DOCUMENTS = "related_documents"
 
     # Define the structure for query responses
-    class QueryResponse(BaseModel):
+    class QueryResponse(BaseModel, AsyncInstructMixin):
         query_type: QueryType
         response: str
         additional_info: Optional[str] = None
@@ -482,16 +464,15 @@ def test_schema_optional_and_enum():
     )
 
 
-@pytest.mark.skip
 def test_schema_union():
-    class Search(BaseModel):
+    class Search(BaseModel, AsyncInstructMixin):
         search_query: str
 
-    class CalendarInvite(BaseModel):
+    class CalendarInvite(BaseModel, AsyncInstructMixin):
         date: str
 
     # Define the structure for query responses
-    class QueryResponse(BaseModel):
+    class QueryResponse(BaseModel, AsyncInstructMixin):
         query_type: Union[Search, CalendarInvite]
         response: str
         additional_info: Optional[str] = None

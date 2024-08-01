@@ -10,7 +10,7 @@ from instructor.dsl.partial import PartialBase
 from instructor.dsl.simple_type import AdapterBase, ModelAdapter, is_simple_type
 from instructor.function_calls import OpenAISchema, openai_schema
 from instructor.utils import merge_consecutive_messages
-from instructor.validators import AsyncValidationError
+from instructor.validators import AsyncValidationError, AsyncInstructMixin
 from openai.types.chat import ChatCompletion
 from pydantic import BaseModel, create_model
 import json
@@ -81,7 +81,7 @@ async def process_response_async(
         mode=mode,
     )
 
-    if isinstance(model, OpenAISchema):
+    if isinstance(model, AsyncInstructMixin):
         validation_errors = await model.model_async_validate(validation_context)
         if validation_errors:
             raise AsyncValidationError(f"Validation errors: {validation_errors}")
@@ -153,7 +153,7 @@ def process_response(
         mode=mode,
     )
 
-    if isinstance(model, OpenAISchema):
+    if isinstance(model, AsyncInstructMixin):
         if model.has_async_validators():
             logging.warning(
                 "Async Validators will not run in a synchronous client. Please make sure to use an Async client"
