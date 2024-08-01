@@ -195,7 +195,7 @@ except ValidationError as e:
 
 ## Async Validation
 
-Pydantic doesn't support async validators out of the box at the moment. We've implemented two validators that you can use out of the box to run async calls.
+Pydantic doesn't support async validators out of the box. To get around this, we've implemented two validators that you can use out of the box to run async calls.
 
 This is especially useful if you are making multiple api calls in parallel. This implementation is heavily inspired by [pydantic-async-validation](https://github.com/team23/pydantic-async-validation/tree/64e4190494141c881ade30963390f91c3286dafc).
 
@@ -210,11 +210,11 @@ To use the `async_field_validator`, all you'll need to do is to define your stan
 ```python hl_lines="11"
 from pydantic import BaseModel
 import asyncio
-from instructor import from_openai, async_field_validator
+from instructor import from_openai, async_field_validator, AsyncInstructMixin
 from openai import AsyncOpenAI
 
 
-class User(BaseModel):
+class User(BaseModel, AsyncInstructMixin):
     label: str
     name: str
 
@@ -239,10 +239,10 @@ resp = asyncio.run(
     )
 )
 print(resp)
-#> label='SOFTWARE ENGINEER' name='IVAN'
+# > label='SOFTWARE ENGINEER' name='IVAN'
 ```
 
-1.  You can set the fields to run the same validator on. We don't support wildcard characters (eg. '\*' ) at this moment but might in the future.
+1.  You can set the fields to run the same validator on. We don't support wildcard characters (eg. \* ) at this moment but might in the future.
 
 ### Model Validators
 
@@ -251,18 +251,20 @@ We can also use a model validator to validate a combination of fields. In this c
 ```python hl_lines="11"
 from pydantic import BaseModel
 import asyncio
-from instructor import from_openai, async_model_validator
+from instructor import from_openai, async_model_validator, AsyncInstructMixin
 from openai import AsyncOpenAI
 
 
-class User(BaseModel):
+class User(BaseModel, AsyncInstructMixin):
     name: str
     occupation: str
 
-    @async_model_validator()  # (1)!
+    @async_model_validator()
     async def validate_uppercase(self):
         if not self.name.isupper() or not self.occupation.isupper():
-            raise ValueError("Name and Occupation must be capitalized (Eg. TOM, COOK)")
+            raise ValueError(
+                "Name and Occupation of the user must be capitalized (Eg. TOM, COOK)"
+            )
 
 
 client = from_openai(AsyncOpenAI())
@@ -280,8 +282,8 @@ resp = asyncio.run(
     )
 )
 
-assert resp.name == "IVAN"
-assert resp.occupation == "SOFTWARE ENGINEER"
+print(resp)
+# > name='IVAN' occupation='SOFTWARE ENGINEER'
 ```
 
 1. This wil run the validator on the entire model. You can access any of the fields in this manner and it will be propogated up on a model level
@@ -291,7 +293,7 @@ assert resp.occupation == "SOFTWARE ENGINEER"
 We also support nested validation as long as they inherit from Pydantic's `BaseModel` class
 
 ```python hl_lines="9-15"
-from instructor import async_model_validator
+from instructor import async_model_validator, AsyncInstructMixin
 from pydantic import BaseModel
 import asyncio
 from instructor import from_openai
@@ -299,7 +301,7 @@ from openai import AsyncOpenAI
 import time
 
 
-class User(BaseModel):  # (1)!
+class User(BaseModel, AsyncInstructMixin):  # (1)!
     name: str
     occupation: str
 
@@ -308,7 +310,7 @@ class User(BaseModel):  # (1)!
         await asyncio.sleep(2)
 
 
-class Users(BaseModel):
+class Users(BaseModel, AsyncInstructMixin):
     users: list[User]
 
 
@@ -330,17 +332,19 @@ resp = asyncio.run(
 )
 end = time.time()
 print(f"Elapsed Time: {end-start}")
-#> Elapsed Time: 3.375563859939575
+# > Elapsed Time: 3.3290491572418213
 print(resp.model_dump_json())
+
 # {
 #     "users": [
 #         {"name": "Thomas", "occupation": "software engineer"},
 #         {"name": "Jonathan", "occupation": "Barista"},
 #     ]
 # }
+
 ```
 
-1. As long as the class inherits from the `BaseModel` class, we'll be able to run the validation you define on a property
+1. As long as the class uses the `AsyncInstructMixin` class, we'll be able to run the validation you define on a property
 
 ### Validation Context
 
@@ -350,13 +354,13 @@ We allow you to access an arbitrary dictionary by defining an `info` parameter o
 
 ```python hl_lines="12-16 36"
 from pydantic import ValidationInfo, BaseModel
-from instructor import async_model_validator
+from instructor import async_model_validator, AsyncInstructMixin
 import asyncio
 from instructor import from_openai
 from openai import AsyncOpenAI
 
 
-class User(BaseModel):
+class User(BaseModel, AsyncInstructMixin):
     name: str
     occupation: str
 
@@ -367,7 +371,7 @@ class User(BaseModel):
             raise ValueError(f"Do not include the name {self.name}")
 
 
-class Users(BaseModel):
+class Users(BaseModel, AsyncInstructMixin):
     users: list[User]
 
 
@@ -388,7 +392,7 @@ resp = asyncio.run(
     )
 )
 print(resp.model_dump_json())
-# {"users": [{"name": "Jonathan", "occupation": "Barista"}]}
+# > {"users": [{"name": "Jonathan", "occupation": "Barista"}]}
 ```
 
 1.  To access the Validation Context in a validator, just define a property called `info:ValidationInfo` from Pydantic
@@ -398,13 +402,13 @@ We also support the same api with the `field_validator` decorator
 
 ```python hl_lines="12-16 36"
 from pydantic import ValidationInfo, BaseModel
-from instructor import async_field_validator
+from instructor import async_field_validator, AsyncInstructMixin
 import asyncio
 from instructor import from_openai
 from openai import AsyncOpenAI
 
 
-class User(BaseModel):
+class User(BaseModel, AsyncInstructMixin):
     name: str
     occupation: str
 
@@ -415,7 +419,7 @@ class User(BaseModel):
             raise ValueError(f"Do not include the user {v}")
 
 
-class Users(BaseModel):
+class Users(BaseModel, AsyncInstructMixin):
     users: list[User]
 
 
