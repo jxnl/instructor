@@ -295,7 +295,8 @@ class OpenAISchema(BaseModel):
         strict: Optional[bool] = None,
     ) -> BaseModel:
         from anthropic.types import Message
-        if isinstance(completion, Message) and completion.stop_reason == 'max_tokens':
+
+        if isinstance(completion, Message) and completion.stop_reason == "max_tokens":
             raise IncompleteOutputException(last_completion=completion)
 
         # Anthropic returns arguments as a dict, dump to json for model validation below
@@ -323,7 +324,7 @@ class OpenAISchema(BaseModel):
 
         assert isinstance(completion, Message)
 
-        if completion.stop_reason == 'max_tokens':
+        if completion.stop_reason == "max_tokens":
             raise IncompleteOutputException(last_completion=completion)
 
         text = completion.content[0].text
@@ -501,5 +502,5 @@ def openai_schema_helper(cls: T) -> T:
 def openai_schema(cls: type[BaseModel]) -> OpenAISchema:
     if not issubclass(cls, BaseModel):
         raise TypeError("Class must be a subclass of pydantic.BaseModel")
-
+    print("Lol testing")
     return openai_schema_helper(cls)
