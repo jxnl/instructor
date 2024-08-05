@@ -45,7 +45,7 @@ class ValidatedUser(BaseModel):
 
 
 @pytest.mark.parametrize("mode", modes)
-def test_parse_user_sync(client, mode):
+def test_parse_validated_user_sync(client, mode):
     client = instructor.from_cohere(client, mode=mode)
 
     resp = client.chat.completions.create(
