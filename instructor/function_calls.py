@@ -2,8 +2,7 @@
 import json
 import logging
 from functools import wraps
-from typing import Annotated, Any, Optional, TypeVar, cast, get_origin, Literal, Union
-from enum import Enum
+from typing import Annotated, Any, Optional, TypeVar, cast
 import asyncio
 from docstring_parser import parse
 from openai.types.chat import ChatCompletion
@@ -460,46 +459,14 @@ class OpenAISchema(BaseModel):
         )
 
 
-def openai_schema_helper(cls: T) -> T:
-    origin = get_origin(cls)
-
-    if origin is list:
-        return list[openai_schema_helper(cls.__args__[0])]
-
-    if origin is Literal:
-        return cls
-
-    if origin is Union:
-        return Union[tuple(openai_schema_helper(arg) for arg in cls.__args__)]
-
-    if issubclass(cls, (str, int, bool, float, bytes, Enum)):
-        return cls
-
-    if isinstance(cls, type) and issubclass(cls, BaseModel):
-        new_types = {}
-        for field_name, field_info in cls.model_fields.items():
-            field_type = field_info.annotation
-            new_field_type = openai_schema_helper(field_type)
-            new_types[field_name] = (new_field_type, field_info)
-
-        schema = wraps(cls, updated=())(
-            create_model(
-                cls.__name__ if hasattr(cls, "__name__") else str(cls),
-                __base__=(cls, OpenAISchema),
-                **new_types,
-            )
-        )
-        return cast(OpenAISchema, schema)
-
-    # None Type
-    if not origin:
-        return cls
-
-    raise ValueError(f"Unsupported Class of {cls}!")
-
-
 def openai_schema(cls: type[BaseModel]) -> OpenAISchema:
     if not issubclass(cls, BaseModel):
         raise TypeError("Class must be a subclass of pydantic.BaseModel")
 
-    return openai_schema_helper(cls)
+    schema = wraps(cls, updated=())(
+        create_model(
+            cls.__name__ if hasattr(cls, "__name__") else str(cls),
+            __base__=(cls, OpenAISchema),
+        )
+    )
+    return cast(OpenAISchema, schema)

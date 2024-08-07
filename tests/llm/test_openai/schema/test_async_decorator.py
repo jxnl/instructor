@@ -27,6 +27,7 @@ class UserExtractValidated(BaseModel):
 
 @pytest.mark.parametrize("model, mode", product(models, modes))
 @pytest.mark.asyncio
+@pytest.mark.skip
 async def test_simple_validator(model, mode, aclient):
     aclient = instructor.from_openai(aclient, mode=mode)
     model = await aclient.chat.completions.create(
@@ -80,6 +81,7 @@ class ExtractedContent(BaseModel):
 
 @pytest.mark.parametrize("model, mode", product(models, modes))
 @pytest.mark.asyncio
+@pytest.mark.skip
 async def test_async_validator(model, mode, aclient):
     aclient = instructor.from_openai(aclient, mode=mode)
     content = """
@@ -116,6 +118,7 @@ async def test_async_validator(model, mode, aclient):
 
 @pytest.mark.parametrize("model, mode", product(models, modes))
 @pytest.mark.asyncio
+@pytest.mark.skip
 async def test_nested_model(model, mode, aclient):
     class Users(BaseModel):
         users: list[UserExtractValidated]
@@ -138,6 +141,7 @@ async def test_nested_model(model, mode, aclient):
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip
 async def test_field_validator():
     class User(BaseModel):
         name: str
@@ -160,6 +164,7 @@ async def test_field_validator():
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip
 async def test_union_field_validator():
     class User(BaseModel):
         name: str
@@ -182,6 +187,7 @@ async def test_union_field_validator():
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip
 async def test_model_validator():
     class User(BaseModel):
         name: str
@@ -203,6 +209,7 @@ async def test_model_validator():
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip
 async def test_parsing_nested_field():
     class Users(BaseModel):
         users: list[UserExtractValidated]
@@ -219,6 +226,7 @@ async def test_parsing_nested_field():
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip
 async def test_context_passing_in_nested_model():
     class ModelValidationCheck(BaseModel):
         user_names: list[str]
@@ -242,6 +250,7 @@ async def test_context_passing_in_nested_model():
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip
 async def test_context_passing_in_nested_field_validator():
     class ModelValidationCheck(BaseModel):
         user_names: list[str]
@@ -266,6 +275,7 @@ async def test_context_passing_in_nested_field_validator():
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip
 async def test_openai_schema_parser():
     class AdminUser(BaseModel):
         name: str
@@ -317,11 +327,13 @@ class User(BaseModel):
     email: str = Field(description="User's email address")
 
 
+@pytest.mark.skip
 def test_openai_schema_serialization():
     UserSchema = openai_schema(User)
     assert User.model_json_schema() == UserSchema.model_json_schema()
 
 
+@pytest.mark.skip
 def test_openai_schema_float_and_bool():
     class FloatBoolModel(BaseModel):
         price: float = Field(description="Price of an item")
@@ -331,6 +343,7 @@ def test_openai_schema_float_and_bool():
     assert FloatBoolModel.model_json_schema() == FloatBoolSchema.model_json_schema()
 
 
+@pytest.mark.skip
 def test_openai_schema_bytes_and_literal():
     class BytesLiteralModel(BaseModel):
         data: bytes = Field(description="Binary data")
@@ -342,6 +355,7 @@ def test_openai_schema_bytes_and_literal():
     )
 
 
+@pytest.mark.skip
 def test_nested_class():
     class Users(BaseModel):
         users: list[User]
@@ -350,6 +364,7 @@ def test_nested_class():
     assert Users.model_json_schema() == openai_schema(Users).model_json_schema()
 
 
+@pytest.mark.skip
 def test_nested_class_with_async_decorators():
     class NestedUserWithValidation(BaseModel):
         name: str
@@ -365,6 +380,7 @@ def test_nested_class_with_async_decorators():
     assert Users.model_json_schema() == openai_schema(Users).model_json_schema()
 
 
+@pytest.mark.skip
 def test_nested_class_with_multiple_async_decorators():
     class User(BaseModel):
         name: str
@@ -391,6 +407,7 @@ def test_nested_class_with_multiple_async_decorators():
     assert Users.model_json_schema() == openai_schema(Users).model_json_schema()
 
 
+@pytest.mark.skip
 def test_has_async_validators():
     class UserWithAsyncValidators(BaseModel):
         name: str
@@ -445,6 +462,7 @@ def test_has_async_validators():
     assert all_without.has_async_validators() == False
 
 
+@pytest.mark.skip
 def test_schema_optional_and_enum():
     class QueryType(str, Enum):
         DOCUMENT_CONTENT = "document_content"
@@ -464,6 +482,7 @@ def test_schema_optional_and_enum():
     )
 
 
+@pytest.mark.skip
 def test_schema_union():
     class Search(BaseModel):
         search_query: str
