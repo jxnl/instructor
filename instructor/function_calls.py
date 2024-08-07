@@ -466,6 +466,9 @@ def openai_schema_helper(cls: T) -> T:
     if origin is list:
         return list[openai_schema_helper(cls.__args__[0])]
 
+    if origin is dict:
+        return dict[openai_schema_helper(cls.__args__[0]), openai_schema_helper(cls.__args__[1])]
+
     if origin is Literal:
         return cls
 
