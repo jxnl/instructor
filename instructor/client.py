@@ -64,6 +64,8 @@ class Instructor:
         max_retries: int = 3,
         validation_context: dict[str, Any] | None = None,
         strict: bool = True,
+        provider_args_callback: Callable[[list[Any], dict[str, Any]], None]
+        | None = None,
         **kwargs: Any,
     ) -> Awaitable[T]:
         ...
@@ -76,6 +78,8 @@ class Instructor:
         max_retries: int = 3,
         validation_context: dict[str, Any] | None = None,
         strict: bool = True,
+        provider_args_callback: Callable[[list[Any], dict[str, Any]], None]
+        | None = None,
         **kwargs: Any,
     ) -> T:
         ...
@@ -88,8 +92,11 @@ class Instructor:
         max_retries: int = 3,
         validation_context: dict[str, Any] | None = None,
         strict: bool = True,
+        provider_args_callback: Callable[[list[Any], dict[str, Any]], None]
+        | None = None,
         **kwargs: Any,
-    ) -> Awaitable[Any]: ...
+    ) -> Awaitable[Any]:
+        ...
 
     @overload
     def create(
@@ -99,8 +106,11 @@ class Instructor:
         max_retries: int = 3,
         validation_context: dict[str, Any] | None = None,
         strict: bool = True,
+        provider_args_callback: Callable[[list[Any], dict[str, Any]], None]
+        | None = None,
         **kwargs: Any,
-    ) -> Any: ...
+    ) -> Any:
+        ...
 
     def create(
         self,
@@ -109,6 +119,8 @@ class Instructor:
         max_retries: int = 3,
         validation_context: dict[str, Any] | None = None,
         strict: bool = True,
+        provider_args_callback: Callable[[list[Any], dict[str, Any]], None]
+        | None = None,
         **kwargs: Any,
     ) -> T | Any | Awaitable[T] | Awaitable[Any]:
         kwargs = self.handle_kwargs(kwargs)
@@ -119,6 +131,7 @@ class Instructor:
             max_retries=max_retries,
             validation_context=validation_context,
             strict=strict,
+            provider_args_callback=provider_args_callback,
             **kwargs,
         )
 
@@ -223,6 +236,8 @@ class Instructor:
         max_retries: int = 3,
         validation_context: dict[str, Any] | None = None,
         strict: bool = True,
+        provider_args_callback: Callable[[list[Any], dict[str, Any]], None]
+        | None = None,
         **kwargs: Any,
     ) -> Awaitable[tuple[T, Any]]:
         ...
@@ -235,6 +250,8 @@ class Instructor:
         max_retries: int = 3,
         validation_context: dict[str, Any] | None = None,
         strict: bool = True,
+        provider_args_callback: Callable[[list[Any], dict[str, Any]], None]
+        | None = None,
         **kwargs: Any,
     ) -> tuple[T, Any]:
         ...
@@ -246,6 +263,8 @@ class Instructor:
         max_retries: int = 3,
         validation_context: dict[str, Any] | None = None,
         strict: bool = True,
+        provider_args_callback: Callable[[list[Any], dict[str, Any]], None]
+        | None = None,
         **kwargs: Any,
     ) -> tuple[T, Any] | Awaitable[tuple[T, Any]]:
         kwargs = self.handle_kwargs(kwargs)
@@ -255,6 +274,7 @@ class Instructor:
             max_retries=max_retries,
             validation_context=validation_context,
             strict=strict,
+            provider_args_callback=provider_args_callback,
             **kwargs,
         )
         return model, model._raw_response
