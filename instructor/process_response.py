@@ -266,15 +266,19 @@ def handle_response_model(
         elif mode in {Mode.JSON, Mode.MD_JSON, Mode.JSON_SCHEMA}:
             # If its a JSON Mode we need to massage the prompt a bit
             # in order to get the response we want in a json format
-            message = dedent(
-                f"""
-                As a genius expert, your task is to understand the content and provide
-                the parsed objects in json that match the following json_schema:\n
-
-                {json.dumps(response_model.model_json_schema(), indent=2)}
-
-                Make sure to return an instance of the JSON, not the schema itself
-                """
+            message = (
+                dedent(
+                    """
+                    As a genius expert, your task is to understand the content and provide
+                    the parsed objects in json that match the following json_schema:\n
+                    """
+                )
+                + json.dumps(response_model.model_json_schema(), indent=2)
+                + dedent(
+                    """
+                    Make sure to return an instance of the JSON, not the schema itself
+                    """
+                )
             )
 
             if mode == Mode.JSON:
@@ -355,22 +359,37 @@ def handle_response_model(
                     + "\n\n".join(openai_system_messages)
                 )
 
-                new_kwargs["system"] += f"""
-                You must only responsd in JSON format that adheres to the following schema:
+                new_kwargs["system"] += (
+                    dedent(
+                        """
+                        You must only responsd in JSON format that adheres to the following schema:
 
-                <JSON_SCHEMA>
-                {json.dumps(response_model.model_json_schema(), indent=2)}
-                </JSON_SCHEMA>
-                """
-                new_kwargs["system"] = dedent(new_kwargs["system"])
+                        <JSON_SCHEMA>
+                        """
+                    )
+                    + json.dumps(response_model.model_json_schema(), indent=2)
+                    + dedent(
+                        """
+                        </JSON_SCHEMA>
+                        """
+                    )
+                )
             else:
-                new_kwargs["system"] += dedent(f"""
-                You must only responsd in JSON format that adheres to the following schema:
+                new_kwargs["system"] += (
+                    dedent(
+                        """
+                        You must only responsd in JSON format that adheres to the following schema:
 
-                <JSON_SCHEMA>
-                {json.dumps(response_model.model_json_schema(), indent=2)}
-                </JSON_SCHEMA>
-                """)
+                        <JSON_SCHEMA>
+                        """
+                    )
+                    + json.dumps(response_model.model_json_schema(), indent=2)
+                    + dedent(
+                        """
+                        </JSON_SCHEMA>
+                        """
+                    )
+                )
 
             new_kwargs["messages"] = [
                 message
@@ -433,16 +452,21 @@ The output must be a valid JSON object that `{response_model.__name__}.model_val
             assert (
                 "model" not in new_kwargs
             ), "Gemini `model` must be set while patching the client, not passed as a parameter to the create method"
-            message = dedent(
-                f"""
-                As a genius expert, your task is to understand the content and provide
-                the parsed objects in json that match the following json_schema:\n
-
-                {json.dumps(response_model.model_json_schema(), indent=2)}
-
-                Make sure to return an instance of the JSON, not the schema itself
-                """
+            message = (
+                dedent(
+                    """
+                    As a genius expert, your task is to understand the content and provide
+                    the parsed objects in json that match the following json_schema:\n
+                    """
+                )
+                + json.dumps(response_model.model_json_schema(), indent=2)
+                + dedent(
+                    """
+                    Make sure to return an instance of the JSON, not the schema itself
+                    """
+                )
             )
+
             # check that the first message is a system message
             # if it is not, add a system message to the beginning
             if new_kwargs["messages"][0]["role"] != "system":
