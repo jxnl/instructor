@@ -14,7 +14,7 @@ class Item(BaseModel):
 
 class Order(BaseModel):
     items: list[Item] = Field(..., default_factory=list)
-    customer: str
+    customer: str = Field(default="")
 
 
 @pytest.mark.parametrize("model, mode", product(models, modes))
@@ -49,13 +49,13 @@ def test_nested(model, mode):
 class Book(BaseModel):
     title: str
     author: str
-    genre: str
+    genre: str = Field(default="")
     isbn: str
 
 
 class LibraryRecord(BaseModel):
     books: list[Book] = Field(..., default_factory=list)
-    visitor: str
+    visitor: str = Field(default="")
     library_id: str
 
 
