@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-
+import warnings
 from openai.types.chat import ChatCompletion
 from instructor.mode import Mode
 from instructor.process_response import process_response, process_response_async
@@ -106,6 +106,17 @@ def reask_messages(response: ChatCompletion, mode: Mode, exception: Exception):
         )
         return
 
+    if mode == Mode.STRUCTURED_OUTPUTS:
+        message = dump_message(response.choices[0].message)
+        if "tool_calls" in message:
+            del message["tool_calls"]
+        yield message
+        yield {
+            "role": "user",
+            "content": f"Validation Errors found:\n{exception}\nRecall the function correctly, fix the errors found in the following attempt:\n{message['content']}",
+        }
+        return
+
     yield dump_message(response.choices[0].message)
     # TODO: Give users more control on configuration
     if mode == Mode.TOOLS:
@@ -143,6 +154,12 @@ def retry_sync(
         from anthropic.types import Usage as AnthropicUsage
 
         total_usage = AnthropicUsage(input_tokens=0, output_tokens=0)
+
+    if mode in {Mode.STRUCTURED_OUTPUTS} and validation_context:
+        warnings.warn(
+            "Structured outputs are not supported with validation_context. Validation context will not be used",
+            stacklevel=2,
+        )
 
     # If max_retries is int, then create a Retrying object
     if isinstance(max_retries, int):
@@ -218,6 +235,12 @@ async def retry_async(
         from anthropic.types import Usage as AnthropicUsage
 
         total_usage = AnthropicUsage(input_tokens=0, output_tokens=0)
+
+    if mode in {Mode.STRUCTURED_OUTPUTS} and validation_context:
+        warnings.warn(
+            "Structured outputs are not supported with validation_context. Validation context will not be used",
+            stacklevel=2,
+        )
 
     # If max_retries is int, then create a AsyncRetrying object
     if isinstance(max_retries, int):

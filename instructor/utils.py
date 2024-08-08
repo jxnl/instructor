@@ -166,6 +166,15 @@ def dump_message(message: ChatCompletionMessage) -> ChatCompletionMessageParam:
         and message.function_call is not None
         and ret["content"]
     ):
+        if not isinstance(ret["content"], str):
+            response_message: str = ""
+            for content_message in ret["content"]:
+                if "text" in content_message:
+                    response_message += content_message["text"]
+                elif "refusal" in content_message:
+                    response_message += content_message["refusal"]
+            ret["content"] = response_message
+
         ret["content"] += json.dumps(message.model_dump()["function_call"])
     return ret
 

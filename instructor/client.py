@@ -425,12 +425,18 @@ def from_openai(
             instructor.Mode.FUNCTIONS,
             instructor.Mode.PARALLEL_TOOLS,
             instructor.Mode.MD_JSON,
+            instructor.Mode.STRUCTURED_OUTPUTS,
         }
 
     if isinstance(client, openai.OpenAI):
         return Instructor(
             client=client,
-            create=instructor.patch(create=client.chat.completions.create, mode=mode),
+            create=instructor.patch(
+                create=client.chat.completions.create
+                if mode != instructor.Mode.STRUCTURED_OUTPUTS
+                else client.beta.chat.completions.parse,  
+                mode=mode,
+            ),
             mode=mode,
             provider=provider,
             **kwargs,
@@ -439,7 +445,12 @@ def from_openai(
     if isinstance(client, openai.AsyncOpenAI):
         return AsyncInstructor(
             client=client,
-            create=instructor.patch(create=client.chat.completions.create, mode=mode),
+            create=instructor.patch(
+                create=client.chat.completions.create
+                if mode != instructor.Mode.STRUCTURED_OUTPUTS
+                else client.beta.chat.completions.parse,  
+                mode=mode,
+            ),
             mode=mode,
             provider=provider,
             **kwargs,

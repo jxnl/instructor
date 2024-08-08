@@ -8,6 +8,7 @@ class Mode(enum.Enum):
     FUNCTIONS = "function_call"
     PARALLEL_TOOLS = "parallel_tool_call"
     TOOLS = "tool_call"
+    STRUCTURED_OUTPUTS = "structured_output"
     MISTRAL_TOOLS = "mistral_tools"
     JSON = "json_mode"
     MD_JSON = "markdown_json_mode"

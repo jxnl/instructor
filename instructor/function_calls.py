@@ -271,7 +271,20 @@ class OpenAISchema(BaseModel):
         if mode in {Mode.JSON, Mode.JSON_SCHEMA, Mode.MD_JSON}:
             return cls.parse_json(completion, validation_context, strict)
 
+        if mode in {Mode.STRUCTURED_OUTPUTS}:
+            return cls.parse_structured_output(completion)
+
         raise ValueError(f"Invalid patch mode: {mode}")
+
+    @classmethod
+    def parse_structured_output(
+        cls: type[BaseModel],
+        completion: ChatCompletion,
+    ):
+        message = completion.choices[0].message
+        if message.refusal:
+            raise ValueError(f"Refusal of {message.refusal.reason}")
+        return message.parsed
 
     @classmethod
     def parse_cohere_json_schema(
