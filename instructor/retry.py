@@ -161,6 +161,7 @@ def retry_sync(
     max_retries: int | Retrying = 1,
     strict: bool | None = None,
     mode: Mode = Mode.TOOLS,
+    provider_args_callback: Callable[[list[Any], dict[str, Any]], None] | None = None,
 ) -> T_Model:
     total_usage = CompletionUsage(completion_tokens=0, prompt_tokens=0, total_tokens=0)
     if mode in {Mode.ANTHROPIC_TOOLS, Mode.ANTHROPIC_JSON}:
@@ -182,6 +183,7 @@ def retry_sync(
         for attempt in max_retries:
             with attempt:
                 try:
+                    provider_args_callback(args, kwargs)
                     response = func(*args, **kwargs)
                     stream = kwargs.get("stream", False)
                     response = update_total_usage(response, total_usage)

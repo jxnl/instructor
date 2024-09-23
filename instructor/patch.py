@@ -1,12 +1,6 @@
 # type: ignore[all]
 from functools import wraps
-from typing import (
-    Callable,
-    Protocol,
-    TypeVar,
-    Union,
-    overload,
-)
+from typing import Callable, Protocol, TypeVar, Union, overload, Any
 from collections.abc import Awaitable
 from typing_extensions import ParamSpec
 
@@ -35,7 +29,8 @@ class InstructorChatCompletionCreate(Protocol):
         max_retries: int = 1,
         *args: T_ParamSpec.args,
         **kwargs: T_ParamSpec.kwargs,
-    ) -> T_Model: ...
+    ) -> T_Model:
+        ...
 
 
 class AsyncInstructorChatCompletionCreate(Protocol):
@@ -46,35 +41,40 @@ class AsyncInstructorChatCompletionCreate(Protocol):
         max_retries: int = 1,
         *args: T_ParamSpec.args,
         **kwargs: T_ParamSpec.kwargs,
-    ) -> T_Model: ...
+    ) -> T_Model:
+        ...
 
 
 @overload
 def patch(
     client: OpenAI,
     mode: Mode = Mode.TOOLS,
-) -> OpenAI: ...
+) -> OpenAI:
+    ...
 
 
 @overload
 def patch(
     client: AsyncOpenAI,
     mode: Mode = Mode.TOOLS,
-) -> AsyncOpenAI: ...
+) -> AsyncOpenAI:
+    ...
 
 
 @overload
 def patch(
     create: Callable[T_ParamSpec, T_Retval],
     mode: Mode = Mode.TOOLS,
-) -> InstructorChatCompletionCreate: ...
+) -> InstructorChatCompletionCreate:
+    ...
 
 
 @overload
 def patch(
     create: Awaitable[T_Retval],
     mode: Mode = Mode.TOOLS,
-) -> InstructorChatCompletionCreate: ...
+) -> InstructorChatCompletionCreate:
+    ...
 
 
 def patch(
@@ -110,6 +110,9 @@ def patch(
         validation_context: dict = None,
         max_retries: int = 1,
         strict: bool = True,
+        provider_args_callback: Callable[
+            [list[Any], dict[str, Any]], Awaitable[None]
+        ] = None,
         *args: T_ParamSpec.args,
         **kwargs: T_ParamSpec.kwargs,
     ) -> T_Model:
@@ -124,6 +127,7 @@ def patch(
             args=args,
             kwargs=new_kwargs,
             strict=strict,
+            provider_args_callback=provider_args_callback,
             mode=mode,
         )
         return response
@@ -134,6 +138,7 @@ def patch(
         validation_context: dict = None,
         max_retries: int = 1,
         strict: bool = True,
+        provider_args_callback: Callable[[list[Any], dict[str, Any]], None] = None,
         *args: T_ParamSpec.args,
         **kwargs: T_ParamSpec.kwargs,
     ) -> T_Model:
@@ -147,6 +152,7 @@ def patch(
             max_retries=max_retries,
             args=args,
             strict=strict,
+            provider_args_callback=provider_args_callback,
             kwargs=new_kwargs,
             mode=mode,
         )
