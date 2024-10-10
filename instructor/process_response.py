@@ -406,6 +406,32 @@ def handle_cohere_modes(new_kwargs: dict[str, Any]) -> tuple[None, dict[str, Any
     return None, new_kwargs
 
 
+def handle_fireworks_tools(
+    response_model: type[T], new_kwargs: dict[str, Any]
+) -> tuple[type[T], dict[str, Any]]:
+    new_kwargs["tools"] = [
+        {
+            "type": "function",
+            "function": response_model.openai_schema,
+        }
+    ]
+    new_kwargs["tool_choice"] = {
+        "type": "function",
+        "function": {"name": response_model.openai_schema["name"]},
+    }
+    return response_model, new_kwargs
+
+
+def handle_fireworks_json(
+    response_model: type[T], new_kwargs: dict[str, Any]
+) -> tuple[type[T], dict[str, Any]]:
+    new_kwargs["response_format"] = {
+        "type": "json_object",
+        "schema": response_model.model_json_schema(),
+    }
+    return response_model, new_kwargs
+
+
 def handle_gemini_json(
     response_model: type[T], new_kwargs: dict[str, Any]
 ) -> tuple[type[T], dict[str, Any]]:
@@ -657,6 +683,8 @@ def handle_response_model(
         Mode.VERTEXAI_JSON: handle_vertexai_json,
         Mode.CEREBRAS_JSON: handle_cerebras_json,
         Mode.CEREBRAS_TOOLS: handle_cerebras_tools,
+        Mode.FIREWORKS_JSON: handle_fireworks_json,
+        Mode.FIREWORKS_TOOLS: handle_fireworks_tools,
     }
 
     if mode in mode_handlers:

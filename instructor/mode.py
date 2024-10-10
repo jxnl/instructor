@@ -24,6 +24,8 @@ class Mode(enum.Enum):
     TOOLS_STRICT = "tools_strict"
     CEREBRAS_TOOLS = "cerebras_tools"
     CEREBRAS_JSON = "cerebras_json"
+    FIREWORKS_TOOLS = "fireworks_tools"
+    FIREWORKS_JSON = "fireworks_json"
 
     @classmethod
     def warn_mode_functions_deprecation(cls):

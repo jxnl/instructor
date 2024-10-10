@@ -61,6 +61,11 @@ if (
 
     __all__ += ["from_gemini"]
 
+if importlib.util.find_spec("fireworks") is not None:
+    from .client_fireworks import from_fireworks
+
+    __all__ += ["from_fireworks"]
+
 if importlib.util.find_spec("cerebras") is not None:
     from .client_cerebras import from_cerebras
 

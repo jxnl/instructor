@@ -536,6 +536,42 @@ print(resp)
 #> name='Jason' age=25
 ```
 
+### Using Fireworks
+
+For those who want to use the Fireworks models, you can use the `from_fireworks` method to patch the client. You can see their list of models [here](https://fireworks.ai/models).
+
+```python
+from fireworks.client import Fireworks
+import instructor
+from pydantic import BaseModel
+import os
+
+client = Fireworks(
+    api_key=os.environ.get("FIREWORKS_API_KEY"),
+)
+client = instructor.from_fireworks(client)
+
+
+class User(BaseModel):
+    name: str
+    age: int
+
+
+resp = client.chat.completions.create(
+    model="accounts/fireworks/models/llama-v3p2-1b-instruct",
+    response_model=User,
+    messages=[
+        {
+            "role": "user",
+            "content": "Extract Jason is 25 years old.",
+        }
+    ],
+)
+
+print(resp)
+#> name='Jason' age=25
+```
+
 ## Correct Typing
 
 This was the dream of instructor but due to the patching of openai, it wasnt possible for me to get typing to work well. Now, with the new client, we can get typing to work well! We've also added a few `create_*` methods to make it easier to create iterables and partials, and to access the original completion.

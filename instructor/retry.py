@@ -146,6 +146,12 @@ def reask_messages(response: ChatCompletion, mode: Mode, exception: Exception):
                 "role": "user",
                 "content": f"Validation Error found:\n{exception}\nRecall the function correctly, fix the errors and call the tool {tool_call.function.name} again, taking into account the problems with {tool_call.function.arguments} that was previously generated.",
             }
+    elif mode == Mode.FIREWORKS_TOOLS:
+        for tool_call in response.choices[0].message.tool_calls:
+            yield {
+                "role": "user",
+                "content": f"Validation Error found:\n{exception}\nRecall the function correctly, fix the errors and call the tool {tool_call.function.name} again, taking into account the problems with {tool_call.function.arguments} that was previously generated.",
+            }
 
     elif mode == Mode.MD_JSON:
         yield {

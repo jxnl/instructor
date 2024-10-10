@@ -37,6 +37,7 @@ google-generativeai = { version = "^0.8.2", optional = true }
 google-cloud-aiplatform = { version = "^1.53.0", optional = true }
 jsonref = { version = "^1.1.0", optional = true }
 cerebras_cloud_sdk = { version = "^1.5.0", optional = true }
+fireworks-ai = { version = "^0.15.4", optional = true }
 
 [tool.poetry.extras]
 anthropic = ["anthropic", "xmltodict"]
@@ -60,6 +61,7 @@ litellm = ["litellm"]
 google-generativeai = ["google-generativeai"]
 vertexai = ["google-cloud-aiplatform", "jsonref"]
 cerebras_cloud_sdk = ["cerebras_cloud_sdk"]
+fireworks-ai = ["fireworks-ai"]
 
 [tool.poetry.scripts]
 instructor = "instructor.cli.cli:app"
@@ -100,6 +102,7 @@ phonenumbers = "^8.13.33"
 cohere = "^5.1.8"
 mistralai = "^1.0.3"
 cerebras_cloud_sdk = "^1.5.0"
+fireworks-ai = "^0.15.4"
 
 [tool.poetry.group.litellm.dependencies]
 litellm = "^1.35.31"
