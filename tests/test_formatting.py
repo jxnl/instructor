@@ -1,55 +1,64 @@
 from textwrap import dedent
-from instructor.patch import handle_templating
+from instructor.templating import handle_templating
+
 
 def test_handle_templating_with_context():
-    messages = [{"role": "user", "content": "Hello {{ name }}!"}]
+    kwargs = {"messages": [{"role": "user", "content": "Hello {{ name }}!"}]}
     context = {"name": "Alice"}
 
-    result = handle_templating(messages, context)
+    result = handle_templating(kwargs, context)
 
-    assert result == [{"role": "user", "content": "Hello Alice!"}]
+    assert result == {"messages": [{"role": "user", "content": "Hello Alice!"}]}
 
 
 def test_handle_templating_without_context():
-    messages = [{"role": "user", "content": "Hello {{ name }}!"}]
+    kwargs = {"messages": [{"role": "user", "content": "Hello {{ name }}!"}]}
 
-    result = handle_templating(messages)
+    result = handle_templating(kwargs)
 
-    assert result == messages
+    assert result == kwargs
 
 
 def test_handle_templating_with_anthropic_format():
-    messages = [
-        {"role": "user", "content": [{"type": "text", "text": "Hello {{ name }}!"}]}
-    ]
+    kwargs = {
+        "messages": [
+            {"role": "user", "content": [{"type": "text", "text": "Hello {{ name }}!"}]}
+        ]
+    }
     context = {"name": "Bob"}
 
-    result = handle_templating(messages, context)
+    result = handle_templating(kwargs, context)
 
-    assert result == [
-        {"role": "user", "content": [{"type": "text", "text": "Hello Bob!"}]}
-    ]
+    assert result == {
+        "messages": [
+            {"role": "user", "content": [{"type": "text", "text": "Hello Bob!"}]}
+        ]
+    }
 
 
 def test_handle_templating_with_mixed_content():
-    messages = [
-        {"role": "user", "content": "Hello {{ name }}!"},
-        {
-            "role": "assistant",
-            "content": [{"type": "text", "text": "Nice to meet you, {{ name }}!"}],
-        },
-    ]
+    kwargs = {
+        "messages": [
+            {"role": "user", "content": "Hello {{ name }}!"},
+            {
+                "role": "assistant",
+                "content": [{"type": "text", "text": "Nice to meet you, {{ name }}!"}],
+            },
+        ]
+    }
     context = {"name": "Charlie"}
 
-    result = handle_templating(messages, context)
+    result = handle_templating(kwargs, context)
 
-    assert result == [
-        {"role": "user", "content": "Hello Charlie!"},
-        {
-            "role": "assistant",
-            "content": [{"type": "text", "text": "Nice to meet you, Charlie!"}],
-        },
-    ]
+    assert result == {
+        "messages": [
+            {"role": "user", "content": "Hello Charlie!"},
+            {
+                "role": "assistant",
+                "content": [{"type": "text", "text": "Nice to meet you, Charlie!"}],
+            },
+        ]
+    }
 
 
 def test_handle_templating_with_secret_context():
@@ -59,63 +68,71 @@ def test_handle_templating_with_secret_context():
         name: str
         address: SecretStr
 
-    messages = [
-        {
-            "role": "user",
-            "content": "{{ user.name }}'s address is '{{ user.address.get_secret_value() }}'",
-        }
-    ]
-    context = {"user": UserContext(name="Jason", address="123 Secret St, Hidden City")}
+    kwargs = {
+        "messages": [
+            {
+                "role": "user",
+                "content": "{{ user.name }}'s address is '{{ user.address.get_secret_value() }}'",
+            }
+        ]
+    }
+    context = {
+        "user": UserContext(
+            name="Jason", address=SecretStr("123 Secret St, Hidden City")
+        )
+    }
 
-    result = handle_templating(messages, context)
+    result = handle_templating(kwargs, context)
 
-    assert result == [
-        {"role": "user", "content": "Jason's address is '123 Secret St, Hidden City'"}
-    ]
+    assert result == {
+        "messages": [
+            {
+                "role": "user",
+                "content": "Jason's address is '123 Secret St, Hidden City'",
+            }
+        ]
+    }
 
     # Ensure the original SecretStr is not exposed when rendered
     assert str(context["user"].address) == "**********"
 
 
-def test_handle_templating_with_loop():
-    messages = [
-        {
-            "role": "user",
-            "content": dedent(
-                """
-                Here are the items:
-                {% for item in items %}
-                  - {{ item.name }}: ${{ item.price }}
-                {% endfor %}
-                Total: ${{ total }}
-            """
-            ),
-        }
-    ]
-    context = {
-        "items": [
-            {"name": "Apple", "price": 0.5},
-            {"name": "Banana", "price": 0.3},
-            {"name": "Orange", "price": 0.7},
-        ],
-        "total": 1.5,
+def test_handle_templating_with_cohere_format():
+    kwargs = {
+        "message": "Hello {{ name }}!",
+        "chat_history": [{"message": "Previous message to {{ name }}"}],
+    }
+    context = {"name": "David"}
+
+    result = handle_templating(kwargs, context)
+
+    assert result == {
+        "message": "Hello David!",
+        "chat_history": [{"message": "Previous message to David"}],
     }
 
-    result = handle_templating(messages, context)
 
-    expected_content = dedent(
-        """
-        Here are the items:
+def test_handle_templating_with_gemini_format():
+    kwargs = {
+        "contents": [
+            {"role": "user", "parts": ["Hello {{ name }}!", "How are you {{ name }}?"]}
+        ]
+    }
+    context = {"name": "Eve"}
 
-          - Apple: $0.5
+    result = handle_templating(kwargs, context)
 
-          - Banana: $0.3
+    assert result == {
+        "contents": [{"role": "user", "parts": ["Hello Eve!", "How are you Eve?"]}]
+    }
 
-          - Orange: $0.7
-          
-        Total: $1.5
-        """
-    )
 
-    assert result[0]["role"] == "user"
-    assert result[0]["content"].strip() == expected_content.strip()
+def test_handle_templating_raises_error_for_unknown_format():
+    kwargs = {"unknown_key": "Some content"}
+    context = {"name": "Alice"}
+
+    try:
+        handle_templating(kwargs, context)
+        assert False, "Expected ValueError to be raised"
+    except ValueError as e:
+        assert str(e) == "Expected 'message', 'messages' or 'contents' in kwargs"

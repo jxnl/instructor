@@ -16,6 +16,7 @@ from pydantic import BaseModel
 from instructor.process_response import handle_response_model
 from instructor.retry import retry_async, retry_sync
 from instructor.utils import is_async
+from instructor.templating import handle_templating
 
 from instructor.mode import Mode
 import logging
@@ -75,104 +76,6 @@ def handle_context(
         )
         context = validation_context
     return context
-
-
-def handle_cohere_templating(
-    new_kwargs: dict[str, Any], context: dict[str, Any] | None = None
-) -> dict[str, Any]:
-    if not context:
-        return new_kwargs
-
-    from textwrap import dedent
-    from jinja2 import Template
-
-    new_kwargs["message"] = (
-        dedent(Template(new_kwargs["message"]).render(**context))
-        if context
-        else new_kwargs["message"]
-    )
-    new_kwargs["chat_history"] = handle_templating(new_kwargs["chat_history"], context)
-    return new_kwargs
-
-
-def handle_templating(
-    messages: list[dict[str, Any]], context: dict[str, Any] | None = None
-) -> list[dict[str, Any]]:
-    """
-    Handle templating for messages using the provided context.
-
-    This function processes a list of messages, applying Jinja2 templating to their content
-    using the provided context. It supports both standard OpenAI message format and
-    Anthropic's format with parts.
-
-    Args:
-        messages (list[dict[str, Any]]): A list of message dictionaries to process.
-        context (dict[str, Any] | None, optional): A dictionary of variables to use in templating.
-            Defaults to None.
-
-    Returns:
-        list[dict[str, Any]]: The processed list of messages with templated content.
-
-    Note:
-        - If no context is provided, the original messages are returned unchanged.
-        - For OpenAI format, the 'content' field is processed if it's a string.
-        - For Anthropic format, each 'text' part within the 'content' list is processed.
-        - The function uses Jinja2 for templating and applies textwrap.dedent for formatting.
-
-    TODO: Gemini, Cohere, formats are missing here.
-    """
-    if context is None:
-        return messages
-
-    from jinja2 import Template
-    from textwrap import dedent
-
-    for message in messages:
-        if hasattr(message, "parts"):
-            # VertexAI Support
-            if isinstance(message.parts, list):  # type: ignore
-                import vertexai.generative_models as gm  # type: ignore
-
-                return gm.Content(
-                    role=message.role,  # type: ignore
-                    parts=[
-                        gm.Part.from_text(dedent(Template(part.text).render(**context)))  # type: ignore
-                        if hasattr(part, "text")  # type: ignore
-                        else part
-                        for part in message.parts  # type: ignore
-                    ],
-                )
-            return message  # type: ignore
-
-        if isinstance(message.get("message"), str):
-            message["message"] = dedent(Template(message["message"]).render(**context))
-            continue
-        # Handle OpenAI format
-        if isinstance(message.get("content"), str):
-            message["content"] = dedent(Template(message["content"]).render(**context))
-            continue
-
-        # Handle Anthropic format
-        if isinstance(message.get("content"), list):
-            for part in message["content"]:
-                if (
-                    isinstance(part, dict)
-                    and part.get("type") == "text"  # type:ignore
-                    and isinstance(part.get("text"), str)  # type:ignore
-                ):
-                    part["text"] = dedent(Template(part["text"]).render(**context))  # type:ignore
-
-        # Gemini Support
-        if isinstance(message.get("parts"), list):
-            new_parts = []
-            for part in message["parts"]:
-                if isinstance(part, str):
-                    new_parts.append(dedent(Template(part).render(**context)))  # type: ignore
-                else:
-                    new_parts.append(part)  # type: ignore
-            message["parts"] = new_parts
-
-    return messages
 
 
 @overload
@@ -245,12 +148,7 @@ def patch(  # type: ignore
         response_model, new_kwargs = handle_response_model(
             response_model=response_model, mode=mode, **kwargs
         )
-        if "messages" in new_kwargs:
-            new_kwargs["messages"] = handle_templating(new_kwargs["messages"], context)
-
-        elif "contents" in new_kwargs:
-            new_kwargs["contents"] = handle_templating(new_kwargs["contents"], context)
-
+        new_kwargs = handle_templating(new_kwargs, context)
 
         response = await retry_async(
             func=func,  # type: ignore
@@ -280,13 +178,7 @@ def patch(  # type: ignore
             response_model=response_model, mode=mode, **kwargs
         )
 
-        if "messages" in new_kwargs:
-            new_kwargs["messages"] = handle_templating(new_kwargs["messages"], context)
-        elif "message" in new_kwargs and "chat_history" in new_kwargs:
-            new_kwargs = handle_cohere_templating(new_kwargs, context)
-
-        elif "contents" in new_kwargs:
-            new_kwargs["contents"] = handle_templating(new_kwargs["contents"], context)
+        new_kwargs = handle_templating(new_kwargs, context)
 
         response = retry_sync(
             func=func,  # type: ignore
