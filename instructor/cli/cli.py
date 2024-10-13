@@ -23,3 +23,7 @@ def docs(query: str = typer.Argument(None, help="Search the documentation")) -> 
         typer.launch(f"https://python.useinstructor.com/?q={query}")
     else:
         typer.launch("https://python.useinstructor.com/")
+
+
+if __name__ == "__main__":
+    app()

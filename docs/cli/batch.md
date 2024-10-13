@@ -1,13 +1,20 @@
-# Using the Command Line Interface
+# Using the Command Line Interface for Batch Jobs
 
-The instructor CLI provides functionalities for managing batch jobs on OpenAI
+The instructor CLI provides functionalities for managing batch jobs on both OpenAI and Anthropic platforms. This dual support allows users to leverage the strengths of both providers for their batch processing needs.
+
+## Supported Providers
+
+- **OpenAI**: Utilizes OpenAI's robust batch processing capabilities.
+- **Anthropic**: Leverages Anthropic's advanced language models for batch operations.
+
+To switch between providers, use the `--use-anthropic` flag in the relevant commands.
 
 ```bash
 $ instructor batch --help
 
  Usage: instructor batch [OPTIONS] COMMAND [ARGS]...
 
- Manage OpenAI Batch jobs
+ Manage OpenAI and Anthropic Batch jobs
 
 ╭─ Options ───────────────────────────────────────────────────────────────────────────╮
 │ --help          Show this message and exit.                                         │
@@ -15,6 +22,7 @@ $ instructor batch --help
 ╭─ Commands ──────────────────────────────────────────────────────────────────────────╮
 │ cancel             Cancel a batch job                                               │
 │ create-from-file   Create a batch job from a file                                   │
+│ download-file      Download the file associated with a batch job                    │
 │ list               See all existing batch jobs                                      │
 ╰─────────────────────────────────────────────────────────────────────────────────────╯
 ```
@@ -38,14 +46,16 @@ $ instructor batch list --help
 │                                     [default: 10]                                   │
 │ --screen    --no-screen             Enable or disable screen output                 │
 │                                     [default: no-screen]                            │
+│ --use-anthropic                     Use Anthropic API instead of OpenAI             │
+│                                     [default: False]                                │
 │ --help                              Show this message and exit.                     │
 ╰─────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
-This returns a list of jobs as seen below
+This returns a list of jobs as seen below:
 
-```
-$ instructor batch list --limit 9
+```bash
+$ instructor batch list --limit 5
 
                                    OpenAI Batch Jobs
 ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━┓
@@ -56,61 +66,52 @@ $ instructor batch list --limit 9
 │ batch_zsTSsWVLgpEan… │ 2024-06-19 15:06:05 │ completed │ 0      │ 15        │ 15    │
 │ batch_igaa2j9VBVw2Z… │ 2024-06-19 15:01:59 │ completed │ 0      │ 300       │ 300   │
 │ batch_HcjI2wG46Y1LY… │ 2024-06-12 15:45:37 │ completed │ 0      │ 3         │ 3     │
-│ batch_YiRKLAmKBhwxM… │ 2024-06-12 15:09:44 │ completed │ 0      │ 3         │ 3     │
-│ batch_hS0XGlXzTVS7S… │ 2024-06-12 15:05:59 │ completed │ 0      │ 3         │ 3     │
-│ batch_6s4FmcaV7woam… │ 2024-06-12 14:26:34 │ completed │ 0      │ 3         │ 3     │
 └──────────────────────┴─────────────────────┴───────────┴────────┴───────────┴───────┘
 ```
 
 ### Create From File
 
-You'll need to supply a valid .jsonl file in order to be able to create a Batch job.
+You'll need to supply a valid .jsonl file to create a Batch job. Here's how you can create one using Instructor:
 
-??? info "Don't have a `.jsonl` file on hand?"
+```python
+from instructor.batch import BatchJob
+from pydantic import BaseModel, Field
+from typing import Literal
 
-    You can use Instructor to create the `.jsonl` with nothing more than simple pydantic and our `BatchJob` object as seen below.
+class Classification(BaseModel):
+    label: Literal["SPAM", "NOT_SPAM"] = Field(
+        ..., description="Whether the email is spam or not"
+    )
 
-    ```python
-    from instructor.batch import BatchJob
-    from pydantic import BaseModel, Field
-    from typing import Literal
+emails = [
+    "Hello there I'm a Nigerian prince and I want to give you money",
+    "Meeting with Thomas has been set at Friday next week",
+    "Here are some weekly product updates from our marketing team",
+]
 
-
-    class Classification(BaseModel):
-        label: Literal["SPAM", "NOT_SPAM"] = Field(
-            ..., description="Whether the email is spam or not"
-        )
-
-
-    emails = [
-        "Hello there I'm a Nigerian prince and I want to give you money",
-        "Meeting with Thomas has been set at Friday next week",
-        "Here are some weekly product updates from our marketing team",
+messages = [
+    [
+        {
+            "role": "system",
+            "content": f"Classify the following email {email}",
+        }
     ]
+    for email in emails
+]
 
-    messages = [
-        [
-            {
-                "role": "system",
-                "content": f"Classify the following email {email}",
-            }
-        ]
-        for email in emails
-    ]
+import json
 
-    import json
+with open("output.jsonl", "w") as f:
+    for line in BatchJob.create_from_messages(
+        messages,
+        model="gpt-3.5-turbo",
+        response_model=Classification,
+        max_tokens=100,
+    ):
+        f.write(json.dumps(line) + "\n")
+```
 
-    with open("output.jsonl", "w") as f:
-        for line in BatchJob.create_from_messages(
-            messages,
-            model="gpt-3.5-turbo",
-            response_model=Classification,
-            max_tokens=100,
-        ):
-            f.write(json.dumps(line) + "\n")
-    ```
-
-You can then import in the .jsonl file using the `instructor batch create-from-file` command
+You can then import the .jsonl file using the `instructor batch create-from-file` command:
 
 ```bash
 $ instructor batch create-from-file --help
@@ -122,13 +123,21 @@ Usage: instructor batch create-from-file [OPTIONS]
 ╭─ Options ───────────────────────────────────────────────────────────────────────────╮
 │ *  --file-path        TEXT  File containing the batch job requests [default: None]  │
 │                             [required]                                              │
+│    --use-anthropic          Use Anthropic API instead of OpenAI                     │
+│                             [default: False]                                        │
 │    --help                   Show this message and exit.                             │
 ╰─────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
+Example usage:
+
+```bash
+$ instructor batch create-from-file --file-path output.jsonl
+```
+
 ### Cancelling a Batch Job
 
-You can also cancel an outstanding batch job by using the `cancel` command.
+You can cancel an outstanding batch job using the `cancel` command:
 
 ```bash
 $ instructor batch cancel --help
@@ -139,6 +148,42 @@ $ instructor batch cancel --help
 
 ╭─ Options ───────────────────────────────────────────────────────────────────────────╮
 │ *  --batch-id        TEXT  Batch job ID to cancel [default: None] [required]        │
-│    --help                  Show this message and exit.                              │
+│    --use-anthropic        Use Anthropic API instead of OpenAI                       │
+│                           [default: False]                                          │
+│    --help                 Show this message and exit.                               │
 ╰─────────────────────────────────────────────────────────────────────────────────────╯
 ```
+
+Example usage:
+
+```bash
+$ instructor batch cancel --batch-id batch_BSMSiMMy8on2D
+```
+
+### Downloading Batch Job Results
+
+To download the results of a completed batch job:
+
+```bash
+$ instructor batch download-file --help
+
+ Usage: instructor batch download-file [OPTIONS]
+
+ Download the file associated with a batch job
+
+╭─ Options ───────────────────────────────────────────────────────────────────────────╮
+│ *  --batch-id           TEXT  Batch job ID to download [default: None] [required]   │
+│ *  --download-file-path TEXT  Path to download file to [default: None] [required]   │
+│    --use-anthropic           Use Anthropic API instead of OpenAI                    │
+│                              [default: False]                                       │
+│    --help                    Show this message and exit.                            │
+╰─────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+Example usage:
+
+```bash
+$ instructor batch download-file --batch-id batch_pD5dqHmqjWYF5 --download-file-path results.jsonl
+```
+
+This comprehensive set of commands allows you to manage batch jobs efficiently, whether you're using OpenAI or Anthropic as your provider.
