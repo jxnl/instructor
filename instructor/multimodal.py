@@ -9,9 +9,11 @@ from .mode import Mode
 class Image(BaseModel):
     """Represents an image that can be loaded from a URL or file path."""
 
-    source: Union[str, Path] = Field(..., description="URL or file path of the image")  # noqa: UP007
+    source: str | Path = Field(
+        ..., description="URL or file path of the image"
+    )  # noqa: UP007
     media_type: str = Field(..., description="MIME type of the image")
-    data: Union[str, None] = Field(  # noqa: UP007
+    data: str | None = Field(  # noqa: UP007
         None, description="Base64 encoded image data", repr=False
     )
 
@@ -74,16 +76,57 @@ class Image(BaseModel):
             raise ValueError("Image data is missing for base64 encoding.")
 
 
+class Audio(BaseModel):
+    """Represents an audio that can be loaded from a URL or file path."""
+
+    source: str | Path = Field(
+        ..., description="URL or file path of the audio"
+    )  # noqa: UP007
+    data: str | None = Field(  # noqa: UP007
+        None, description="Base64 encoded audio data", repr=False
+    )
+
+    @classmethod
+    def from_url(cls, url: str) -> Audio:
+        """Create an Audio instance from a URL."""
+        assert url.endswith(".wav"), "Audio must be in WAV format"
+        return cls(source=url, data=None)
+
+    @classmethod
+    def from_path(cls, path: str | Path) -> Audio:
+        """Create an Audio instance from a file path."""
+        path = Path(path)
+        assert path.is_file(), f"Audio file not found: {path}"
+        assert path.suffix.lower() == ".wav", "Audio must be in WAV format"
+
+        data = base64.b64encode(path.read_bytes()).decode("utf-8")
+        return cls(source=str(path), data=data)
+
+    def to_openai(self) -> dict[str, Any]:
+        """Convert the Audio instance to OpenAI's API format."""
+        return {
+            "type": "input_audio",
+            "input_audio": {"data": self.data, "format": "wav"},
+        }
+
+    def to_anthropic(self) -> dict[str, Any]:
+        raise NotImplementedError("Anthropic is not supported yet")
+
+
 def convert_contents(
-    contents: Union[  # noqa: UP007
-        list[Union[str, dict[str, Any], Image]], str, dict[str, Any], Image  # noqa: UP007
-    ],
+    contents: (
+        str
+        | dict[str, Any]
+        | Image
+        | Audio
+        | list[str | dict[str, Any] | Image | Audio]
+    ),
     mode: Mode,
-) -> Union[str, list[dict[str, Any]]]:  # noqa: UP007
+) -> str | list[dict[str, Any]]:
     """Convert content items to the appropriate format based on the specified mode."""
     if isinstance(contents, str):
         return contents
-    if isinstance(contents, Image) or isinstance(contents, dict):
+    if isinstance(contents, (Image, Audio)) or isinstance(contents, dict):
         contents = [contents]
 
     converted_contents: list[dict[str, Union[str, Image]]] = []  # noqa: UP007
@@ -92,7 +135,7 @@ def convert_contents(
             converted_contents.append({"type": "text", "text": content})
         elif isinstance(content, dict):
             converted_contents.append(content)
-        elif isinstance(content, Image):
+        elif isinstance(content, (Image, Audio)):
             if mode in {Mode.ANTHROPIC_JSON, Mode.ANTHROPIC_TOOLS}:
                 converted_contents.append(content.to_anthropic())
             elif mode in {Mode.GEMINI_JSON, Mode.GEMINI_TOOLS}:
@@ -108,14 +151,23 @@ def convert_messages(
     messages: list[
         dict[
             str,
-            Union[list[Union[str, dict[str, Any], Image]], str, dict[str, Any], Image],  # noqa: UP007
+            str
+            | dict[str, Any]
+            | Image
+            | Audio
+            | list[str | dict[str, Any] | Image | Audio],
         ]
-    ],  # noqa: UP007
+    ],
     mode: Mode,
 ) -> list[dict[str, Any]]:
     """Convert messages to the appropriate format based on the specified mode."""
     converted_messages = []
     for message in messages:
+        if "type" in message:
+            if message["type"] in {"audio", "image"}:
+                converted_messages.append(message)
+            else:
+                raise ValueError(f"Unsupported message type: {message['type']}")
         role = message["role"]
         content = message["content"]
         if isinstance(content, str):
