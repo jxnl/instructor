@@ -96,23 +96,20 @@ You'll need to supply a valid .jsonl file in order to be able to create a Batch 
     messages = [
         [
             {
-                "role": "system",
+                "role": "user",
                 "content": f"Classify the following email {email}",
             }
         ]
         for email in emails
     ]
 
-    import json
-
-    with open("output.jsonl", "w") as f:
-        for line in BatchJob.create_from_messages(
-            messages,
-            model="gpt-3.5-turbo",
-            response_model=Classification,
-            max_tokens=100,
-        ):
-            f.write(json.dumps(line) + "\n")
+    BatchJob.create_from_messages(
+        messages,
+        model="gpt-3.5-turbo",
+        response_model=Classification,
+        max_tokens=100,
+        file_path="output.jsonl"
+    )
     ```
 
 You can then import in the .jsonl file using the `instructor batch create-from-file` command
