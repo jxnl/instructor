@@ -82,7 +82,7 @@ resp = client.chat.completions.create(
     response_model=str,
 )
 print(resp)
-#> Hello! How can I assist you today?
+#> Hello, world!
 ```
 
 ### Emitting Events
@@ -94,6 +94,25 @@ Events are automatically emitted by the Instructor library at appropriate times.
 You can remove a specific hook using the `off` method:
 
 ```python
+# <%hide%>
+import instructor
+import openai
+import pprint
+
+client = instructor.from_openai(openai.OpenAI())
+resp = client.chat.completions.create(
+    model="gpt-3.5-turbo",
+    messages=[{"role": "user", "content": "Hello, world!"}],
+    response_model=str,
+)
+
+
+def log_completion_kwargs(*args, **kwargs):
+    pprint.pprint({"args": args, "kwargs": kwargs})
+
+
+client.on("completion:kwargs", log_completion_kwargs)
+# <%hide%>
 client.off("completion:kwargs", log_completion_kwargs)
 ```
 
@@ -102,6 +121,17 @@ client.off("completion:kwargs", log_completion_kwargs)
 To remove all hooks for a specific event or all events:
 
 ```python
+# <%hide%>
+import instructor
+import openai
+
+client = instructor.from_openai(openai.OpenAI())
+resp = client.chat.completions.create(
+    model="gpt-3.5-turbo",
+    messages=[{"role": "user", "content": "Hello, world!"}],
+    response_model=str,
+)
+# <%hide%>
 # Clear hooks for a specific event
 client.clear("completion:kwargs")
 
@@ -119,214 +149,108 @@ import openai
 import pydantic
 
 
-def log_completion_kwargs(*args, **kwargs) -> None:
-    """Log the completion kwargs."""
+def log_completion_kwargs(kwargs) -> None:
     print("## Completion kwargs:")
-    #> ## Completion kwargs:
+    print(kwargs)
     """
     {
-        'args': (),
-        'kwargs': {
-            'messages': [
-                {
-                    'role': 'user',
-                    'content': "Extract the user name and age from the following text: 'John is -1 years old'",
-                }
-            ],
-            'model': 'gpt-3.5-turbo',
-            'tools': [
-                {
-                    'type': 'function',
-                    'function': {
-                        'name': 'User',
-                        'description': 'Correctly extracted `User` with all the required parameters with correct types',
-                        'parameters': {
-                            'properties': {
-                                'name': {'title': 'Name', 'type': 'string'},
-                                'age': {'title': 'Age', 'type': 'integer'},
-                            },
-                            'required': ['age', 'name'],
-                            'type': 'object',
-                        },
-                    },
-                }
-            ],
-            'tool_choice': {'type': 'function', 'function': {'name': 'User'}},
-        },
-    }
-    """
-    print({"args": args, "kwargs": kwargs})
-    """
-    {
-        'args': (),
-        'kwargs': {
-            'messages': [
-                {
-                    'role': 'user',
-                    'content': "Extract the user name and age from the following text: 'John is -1 years old'",
-                },
-                {
-                    'role': 'assistant',
-                    'content': '',
-                    'tool_calls': [
-                        {
-                            'id': 'call_GamMbnNfWFCHPHGgZy2VxD09',
-                            'function': {
-                                'arguments': '{"name":"John","age":-1}',
-                                'name': 'User',
-                            },
-                            'type': 'function',
-                        }
-                    ],
-                },
-                {
-                    'role': 'tool',
-                    'tool_call_id': 'call_GamMbnNfWFCHPHGgZy2VxD09',
-                    'name': 'User',
-                    'content': 'Validation Error found:\n1 validation error for User\nage\n  Value error, Age cannot be negative [type=value_error, input_value=-1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.8/v/value_error\nRecall the function correctly, fix the errors',
-                },
-            ],
-            'model': 'gpt-3.5-turbo',
-            'tools': [
-                {
-                    'type': 'function',
-                    'function': {
-                        'name': 'User',
-                        'description': 'Correctly extracted `User` with all the required parameters with correct types',
-                        'parameters': {
-                            'properties': {
-                                'name': {'title': 'Name', 'type': 'string'},
-                                'age': {'title': 'Age', 'type': 'integer'},
-                                'error_message': {
-                                    'anyOf': [{'type': 'string'}, {'type': 'null'}],
-                                    'default': None,
-                                    'title': 'Error Message',
-                                },
-                            },
-                            'required': ['age', 'name'],
-                            'type': 'object',
-                        },
-                    },
-                }
-            ],
-            'tool_choice': {'type': 'function', 'function': {'name': 'User'}},
-        },
-    }
-    """
-
-
-    #> ## Completion response:
-def log_completion_response(response) -> None:
-    """
-    {
-        'id': 'chatcmpl-AH1sl7JTZ37B8RrriiFBjH1n3mNVL',
-        'choices': [
+        "messages": [
             {
-                'finish_reason': 'stop',
-                'index': 0,
-                'logprobs': None,
-                'message': {
-                    'content': None,
-                    'refusal': None,
-                    'role': 'assistant',
-                    'function_call': None,
-                    'tool_calls': [
-                        {
-                            'id': 'call_GamMbnNfWFCHPHGgZy2VxD09',
-                            'function': {
-                                'arguments': '{"name":"John","age":-1}',
-                                'name': 'User',
-                            },
-                            'type': 'function',
-                        }
-                    ],
+                "role": "user",
+                "content": "Extract the user name and age from the following text: 'John is 20 years old'",
+            }
+        ],
+        "model": "gpt-4o-mini",
+        "tools": [
+            {
+                "type": "function",
+                "function": {
+                    "name": "User",
+                    "description": "Correctly extracted `User` with all the required parameters with correct types",
+                    "parameters": {
+                        "properties": {
+                            "name": {"title": "Name", "type": "string"},
+                            "age": {"title": "Age", "type": "integer"},
+                        },
+                        "required": ["age", "name"],
+                        "type": "object",
+                    },
                 },
             }
         ],
-        'created': 1728622175,
-        'model': 'gpt-3.5-turbo-0125',
-        'object': 'chat.completion',
-        'service_tier': None,
-        'system_fingerprint': None,
-        'usage': {
-            'completion_tokens': 9,
-            'prompt_tokens': 106,
-            'total_tokens': 115,
-            'completion_tokens_details': {'audio_tokens': None, 'reasoning_tokens': 0},
-            'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0},
-        },
+        "tool_choice": {"type": "function", "function": {"name": "User"}},
     }
     """
+
+
+def log_completion_response(response) -> None:
     print("## Completion response:")
-    #> ## Completion response:
     print(response.model_dump())
     """
     {
-        'id': 'chatcmpl-AH1smoYP5X5dR7JM83lU78BQemcy1',
-        'choices': [
+        "id": "chatcmpl-AJHKkGTSwkxdmxBuaz69q4yCeqIZK",
+        "choices": [
             {
-                'finish_reason': 'stop',
-                'index': 0,
-                'logprobs': None,
-                'message': {
-                    'content': None,
-                    'refusal': None,
-                    'role': 'assistant',
-                    'function_call': None,
-                    'tool_calls': [
+                "finish_reason": "stop",
+                "index": 0,
+                "logprobs": None,
+                "message": {
+                    "content": None,
+                    "refusal": None,
+                    "role": "assistant",
+                    "function_call": None,
+                    "tool_calls": [
                         {
-                            'id': 'call_VlkoWrL5PMcBd4JIR6cdqxu6',
-                            'function': {
-                                'arguments': '{"name":"John","age":1}',
-                                'name': 'User',
+                            "id": "call_glxG7L23PiVLHWBT2nxvh4Vs",
+                            "function": {
+                                "arguments": '{"name":"John","age":20}',
+                                "name": "User",
                             },
-                            'type': 'function',
+                            "type": "function",
                         }
                     ],
                 },
             }
         ],
-        'created': 1728622176,
-        'model': 'gpt-3.5-turbo-0125',
-        'object': 'chat.completion',
-        'service_tier': None,
-        'system_fingerprint': None,
-        'usage': {
-            'completion_tokens': 9,
-            'prompt_tokens': 193,
-            'total_tokens': 202,
-            'completion_tokens_details': {'audio_tokens': None, 'reasoning_tokens': 0},
-            'prompt_tokens_details': {'audio_tokens': None, 'cached_tokens': 0},
+        "created": 1729158226,
+        "model": "gpt-4o-mini-2024-07-18",
+        "object": "chat.completion",
+        "service_tier": None,
+        "system_fingerprint": "fp_e2bde53e6e",
+        "usage": {
+            "completion_tokens": 9,
+            "prompt_tokens": 87,
+            "total_tokens": 96,
+            "completion_tokens_details": {"audio_tokens": None, "reasoning_tokens": 0},
+            "prompt_tokens_details": {"audio_tokens": None, "cached_tokens": 0},
         },
-    }
+    }   
     """
 
 
 def log_completion_error(error) -> None:
-    """Log the completion error."""
     print("## Completion error:")
     print({"error": error})
 
-    #> ## Parse error:
 
-    """
-    {'error': 1 validation error for User
-    age
-      Value error, Age cannot be negative [type=value_error, input_value=-1, input_type=int]
-        For further information visit https://errors.pydantic.dev/2.8/v/value_error}
-    """
 def log_parse_error(error) -> None:
-    """Log the parse error."""
     print("## Parse error:")
-    print({"error": error})
+    #> ## Parse error:
+    print(error)
+    """
+    1 validation error for User
+    age
+    Value error, Age cannot be negative [type=value_error, input_value=-10, input_type=int]
+        For further information visit https://errors.pydantic.dev/2.8/v/value_error
+    """
 
 
 # Create an Instructor client
 client = instructor.from_openai(openai.OpenAI())
 
-# Register hooks
 client.on("completion:kwargs", log_completion_kwargs)
 client.on("completion:response", log_completion_response)
+
 client.on("completion:error", log_completion_error)
 client.on("parse:error", log_parse_error)
 
@@ -343,20 +267,36 @@ class User(pydantic.BaseModel):
         return v
 
 
-# Use the client to create a completion
+try:
+    # Use the client to create a completion
+    user = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {
+                "role": "user",
+                "content": "Extract the user name and age from the following text: 'John is -1 years old'",
+            }
+        ],
+        response_model=User,
+        max_retries=1,
+    )
+except Exception as e:
+    print(f"Error: {e}")
+
+
 user = client.chat.completions.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",
     messages=[
         {
             "role": "user",
-            "content": "Extract the user name and age from the following text: 'John is -1 years old'",
+            "content": "Extract the user name and age from the following text: 'John is 10 years old'",
         }
     ],
     response_model=User,
+    max_retries=1,
 )
-
 print(user)
-#> name='John' age=1
+#> name='John' age=10
 ```
 
 This example demonstrates:

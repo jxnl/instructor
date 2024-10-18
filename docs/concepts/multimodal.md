@@ -20,9 +20,25 @@ You can create an `Image` instance from a URL or file path using the `from_url` 
 ```python
 import instructor
 import openai
+from pydantic import BaseModel
 
-image1 = instructor.Image.from_url("https://example.com/image.jpg")
-image2 = instructor.Image.from_path("path/to/image.jpg")
+
+class ImageAnalyzer(BaseModel):
+    description: str
+
+
+# <%hide%>
+import requests
+
+url = "https://static01.nyt.com/images/2017/04/14/dining/14COOKING-RITZ-MUFFINS/14COOKING-RITZ-MUFFINS-jumbo.jpg"
+response = requests.get(url)
+
+with open("muffin.jpg", "wb") as file:
+    file.write(response.content)
+# <%hide%>
+
+image1 = instructor.Image.from_url(url)
+image2 = instructor.Image.from_path("muffin.jpg")
 
 client = instructor.from_openai(openai.OpenAI())
 
@@ -33,6 +49,11 @@ response = client.chat.completions.create(
         {"role": "user", "content": ["What is in this two images?", image1, image2]}
     ],
 )
+
+print(response.model_dump_json())
+"""
+{"description":"A tray of blueberry muffins, some appear whole while one is partially broken showing its soft texture, all have golden-brown tops and are placed on a delicate, patterned surface."}
+"""
 ```
 
 The `Image` class takes care of the necessary conversions and formatting, ensuring that your code remains clean and provider-agnostic. This flexibility is particularly valuable when you're experimenting with different models or when you need to switch providers based on specific project requirements.
